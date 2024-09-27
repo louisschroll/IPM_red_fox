@@ -50,12 +50,14 @@ model {
   # Another possible set of vague priors: suitably wide uniform
   # alpha ~ dunif(-100, 100)                    # log-linear intercept
   # beta ~ dunif(-100, 100)                     # log-linear slope
+  
   # Likelihood for the Poisson GLM
   for (i in 1:n){
     C[i] ~ dpois(lambda[i]) # Stochastic part
     log(lambda[i]) <- alpha + beta * elev[i]    # Link function and linear pred.
     # lambda[i] <- exp(alpha + beta * elev[i])  # Same written differently
   }
+  
   # Derived quantities
   mean.exp.count <- exp(alpha)                  # Backtransformed intercept
 }
