@@ -7,20 +7,20 @@ library(R2WinBUGS)
 bugs.dir <- "c:/Users/etu-devillard/Documents/7. LOGICIELS/WinBUGS14"
 
 # Specify working directory
-setwd("c:/Users/etu-devillard/Documents/1. THESE/data/renard/FDC35/Vital_rate/WinBugs")
-
+# setwd("c:/Users/etu-devillard/Documents/1. THESE/data/renard/FDC35/Vital_rate/WinBugs")
+setwd("~/IPM_red_fox/7.source")
 #######################################################
 ## integrated distance sampling analysis in winbugs
 #######################################################
 
-fox<-read.table("DOM.txt",h=T)       ## import line transect complete data
-foxNA<-na.omit(fox)                  ## remove NA value for detection function estimation
+fox <-read.table ("DOM.txt",h=T)       ## import line transect complete data
+foxNA <- na.omit(fox)                  ## remove NA value for detection function estimation
 # Data
-nind  <-as.vector( tapply(fox$distance,fox$year,length))       ## number of total individual seen per transect per year
-n <-as.vector( tapply(foxNA$distance,foxNA$year,length))       ## number of fox with distance value available for detection function estimation
+nind  <-as.vector(tapply(fox$distance, fox$year, length))       ## number of total individual seen per transect per year
+n <- as.vector(tapply(foxNA$distance,foxNA$year,length))       ## number of fox with distance value available for detection function estimation
 
 vec1<-c(foxNA$distance[foxNA$year=="2002"],
-        rep(NA,max(n)-length(foxNA$distance[foxNA$year=="2002"])))
+        rep(NA, max(n)-length(foxNA$distance[foxNA$year=="2002"])))
 vec2<-c(foxNA$distance[foxNA$year=="2003"],
         rep(NA,max(n)-length(foxNA$distance[foxNA$year=="2003"])))
 vec3<-c(foxNA$distance[foxNA$year=="2004"],
@@ -33,11 +33,11 @@ vec8<-c(foxNA$distance[foxNA$year=="2009"],rep(NA,max(n)-length(foxNA$distance[f
 vec9<-c(foxNA$distance[foxNA$year=="2010"],rep(NA,max(n)-length(foxNA$distance[foxNA$year=="2010"])))
 
 mat<-cbind(vec1,vec2,vec3,vec4,vec5,vec6,vec7,vec8,vec9)        ## matrix construction of distance distribution per year
-C<-as.matrix(mat)
-x<-C/1000                                                       ## translate in km
-t.census<-ncol(x)                                                  ## number of year
+C <- as.matrix(mat)
+x <- C/1000                                                       ## translate in km
+t.census <- ncol(x)                                                  ## number of year
 
-cev<-as.vector( tapply(fox$length[fox$year=="2002"],fox$transect[fox$year=="2002"],mean))
+cev <- as.vector( tapply(fox$length[fox$year=="2002"],fox$transect[fox$year=="2002"],mean))
 cev1<-as.vector( tapply(fox$length[fox$year=="2003"],fox$transect[fox$year=="2003"],mean))
 cev2<-as.vector( tapply(fox$length[fox$year=="2004"],fox$transect[fox$year=="2004"],mean))
 cev3<-as.vector( tapply(fox$length[fox$year=="2005"],fox$transect[fox$year=="2005"],mean))
@@ -54,25 +54,21 @@ L<-c(sum(cev),sum(cev1),sum(cev2),sum(cev3),sum(cev4),sum(cev5),sum(cev6),sum(ce
 sink("distmodelyear.txt")
 cat("
 model {
-
   # Prior
-
-theta ~ dgamma(15, 0.5)                                                        ## time invariant theta
+  theta ~ dgamma(15, 0.5)                                                        ## time invariant theta
 
   # likelihood
-for (t in 1:t.census){
-  for (i in 1:n[t]) {
-    zeros[i,t] <- 0
-    zeros[i,t] ~ dpois(phi[i,t]) # likelihood is exp(-phi[i,t])
-    # -log(likelihood)
-    phi[i,t] <- - (log(2 * theta / 3.14) / 2 - theta * pow(x[i,t],2) / 2)     ## estimation of detection function from available value
+  for (t in 1:t.census) { 
+    for (i in 1:n[t]) {
+      zeros[i, t] <- 0
+      zeros[i, t] ~ dpois(phi[i, t]) # likelihood is exp(-phi[i,t])
+      # -log(likelihood)
+      phi[i, t] <- -(log(2 * theta / 3.14) / 2 - theta * pow(x[i, t], 2) / 2)     ## estimation of detection function from available value
     } #i
 
   # derived parameters
-
-D[t] <- (nind[t] * (sqrt(2 * theta / 3.14)))/(2 * L[t])                       ## density estimation per year with all number of encountered foxes
-N[t] <- D[t]*366                                                              ## effective estimation per year given the surface of the area
-
+  D[t] <- nind[t] * sqrt(2 * theta / 3.14) / (2 * L[t])                       ## density estimation per year with all number of encountered foxes
+  N[t] <- D[t] * 366                                                              ## effective estimation per year given the surface of the area
  } #t
 }
 ",fill = TRUE)
@@ -98,17 +94,18 @@ nb.chains = length(inits)
 # Parameters to be monitored
 parameters <- c("theta", "D", "N")
 
+library(jagsUI)
 # MCMC simulations
-res.sim <- bugs(
+res.sim <- jags(
   data,
   inits,
   parameters,
   "distmodelyear.txt",
   n.thin = nt,
-  bugs.directory = bugs.dir,
+  #bugs.directory = bugs.dir,
   n.chains = nb.chains,
   n.iter = nb.iterations,
-  debug = TRUE,
+  #debug = TRUE,
   n.burnin = nb.burnin
 )
 
@@ -124,14 +121,14 @@ print(res.sim,6)
 sink("vulpes.bug")
 cat("
 ##########################################################################
-#  Integrated population model for the red fox population in Domagn? France
+#  Integrated population model for the red fox population in Domagne France
 #
-#  Age structured, female-based model (2 age classes-1-year )
+#  Age structured, female-based model (2 age classes-1-year)
 #  Pre-breeding census
 #
 #  Combination of:
 #	- Distance sampling census (2002-2010): --> state-space model
-#	- productivity for harvest data(2002-2006) --> Poisson regression
+#	- productivity for harvest data (2002-2006) --> Poisson regression
 #	- age-at-harvest data from trapping and hunting(2002-2006) --> yearling and adult survival:
 #		model by Udevitz & Gonan (2012)
 #
@@ -144,11 +141,11 @@ model
 
     # Survival probabilities from the age-at-harvest data
 for (t in 1:(nyear-1)) {
-    Sy[t] ~ dunif(0,0.8)
+    Sy[t] ~ dunif(0, 0.8)
 	}
 
 for (t in 1:(nyear-1)) {
-    Sa[t] ~ dunif(0.2,1)
+    Sa[t] ~ dunif(0.2, 1)
 	}
 
     # Juvenile Survival probabilities
@@ -158,8 +155,8 @@ for (t in 1:(nyear-1)) {
 
     # Productivity
 for (t in 1:nyear) {
-    muY[t] ~ dnorm(1.4,0.2)I(0,2)   # constrained, because larger fecundity than exp(2) = 7 is not possible
-    muA[t] ~ dnorm(1.6,0.2)I(0,2)
+    muY[t] ~ dnorm(1.4, 0.2)I(0,2)   # constrained, because larger fecundity than exp(2) = 7 is not possible
+    muA[t] ~ dnorm(1.6, 0.2)I(0,2)
   }
 
     # Proportion of breeding female
@@ -200,23 +197,20 @@ for (t in 1:nyear) {
 
 	# binomial likelihood based on formula 6 and 13 in Udevitz & Gogan
 
-for (t in 2:nyear) {
+  for (t in 2:nyear) {
 		zy[t] <- Xit[1,t-1] * har[t]
 		wy[t] <- har[t-1] * lmbda[t]
-    totaly[t] <- zy[t] / wy[t]
+    totaly[t] <- zy[t] / wy[t]      # totaly[t] <- (Xit[1,t-1] * har[t]) / (har[t-1] * lmbda[t])
 
 		za[t] <- sum(Xit[2:(nage-1),t-1]) * har[t]
 		wa[t] <- har[t-1] * lmbda[t]
     totala[t] <- za[t] / wa[t]
-		}
+	}
 
-for (t in 2:nyear) {
-
-		X[2,t] ~ dbin(Sy[t-1],totaly[t])
-		
-		X[3,t] ~ dbin(Sa[t-1],totala[t])
-
-		}
+  for (t in 2:nyear) {
+		X[2,t] ~ dbin(Sy[t-1], totaly[t])
+		X[3,t] ~ dbin(Sa[t-1], totala[t])
+	}
 
 	####################################################
 	# 3.2 Likelihood for productivity data
@@ -225,7 +219,7 @@ for (t in 2:nyear) {
     ########################################
 		# 3.2.1 Productivity data
 		########################################
-for (t in 1:nyear) {
+  for (t in 1:nyear) {
 
  			newborns[1,t] ~ dpois(rhoY[t])
 			log(rhoY[t]) <- log(breeds[1,t]) + muY[t]
@@ -235,7 +229,7 @@ for (t in 1:nyear) {
 
       FecY[t] <- exp(muY[t])
       FecA[t] <- exp(muA[t])
-} #t
+  } #t
 
 
 
@@ -245,7 +239,7 @@ for (t in 1:nyear) {
 for (t in 1:nyear) {
 
  			breeds[1,t] ~ dbin(pY[t],females[1,t])
-      breeds[2,t] ~ dbin(pA[t],females[1,t])
+      breeds[2,t] ~ dbin(pA[t],females[1,t]) #prq mm indice (1) ?
 
 } #t
 
@@ -303,25 +297,27 @@ for (t in 1:t.census) {
   lam[t + 1] <- N[t + 1] / N[t]              # Eq (2) from Udevitz 2012
 }		# t
 
-census<-c(N[1:5])                     # work only on 2002-2006 for the moment
-census<-census/2                      # work only on females
-lmbda<-c(lam[1:5])
+census <- c(N[1:5])                     # work only on 2002-2006 for the moment
+census <- census / 2                    # work only on females
+lmbda <- c(lam[1:5])
 
 # 2. Age-at-death data (2002-2006)
 
 tab <- read.table("DATA.txt", h = T, dec = ",")
-tab1<-subset(tab, tab$Mode!="D"& tab$Mode!="R"& tab$Age!="0")                   # remove biaised Digging out Data and juvenile class
-DOM<-as.matrix(table(tab1$Age[tab1$GIC=="D"], tab1$Year[tab1$GIC=="D"]))        # work on Domagne population
+tab1 <- subset(tab, tab$Mode != "D" &
+                 tab$Mode != "R" &
+                 tab$Age != "0")                   # remove biaised Digging out Data and juvenile class
+DOM <- as.matrix(table(tab1$Age[tab1$GIC == "D"], tab1$Year[tab1$GIC == "D"]))        # work on Domagne population
 
-	Xit <- DOM[,2:6]                                                              # keep only 2002-2006 for a better quality data
-	har<- colSums(Xit)
-	nyear<- ncol(Xit)
-  nage<-nrow(Xit)
+Xit <- DOM[, 2:6]                                                              # keep only 2002-2006 for a better quality data
+har <- colSums(Xit)
+nyear <- ncol(Xit)
+nage <- nrow(Xit)
 
-  X <- rbind(Xit[1:2,],colSums(Xit[3:nage,]))
+X <- rbind(Xit[1:2, ], colSums(Xit[3:nage, ]))
 
 # 3. Data on productivity (2002-2006)
-tab2<-subset(tab1, tab1$Info=="1"& tab1$GIC=="D")                               # keep Domagn? female with information on repro
+tab2 <- subset(tab1, tab1$Info == "1" & tab1$GIC == "D")                        # keep Domagne female with information on repro
 dom<- subset(tab2, tab2$Year!="1"& tab2$Year!="7")                              # keep only 2002-2006 for a better quality data
 
 newborns<-cbind(tapply(dom$Count[dom$Year=="2"],dom$Age2.[dom$Year=="2"],sum,na.rm=T),
@@ -352,7 +348,19 @@ parameters <- c("Sj","Sy","Sa","im","pY","pA","FecY","FecA","Ntot","lambda","Ny"
 
 # 3. Create random initial values to start the chains
 
-inits <- function(){list(pY=c(runif(nyear,0,1)), pA=c(runif(nyear,0.5,1)), R=c(NA,rep(1,nyear-1)), JUV=c(NA,rep(1,nyear-1)), IM=c(NA,rep(1,nyear-1)),  muY=c(rnorm(nyear,1.4,0.4)), muA=c(rnorm(nyear,1.6,0.4)), Sj=c(runif((nyear-1),0,0.6)), Sy=c(runif((nyear-1),0.2,0.8)), Sa=c(runif((nyear-1),0.2,1)))}
+inits <- function() {
+  list(
+    pY = c(runif(nyear, 0, 1)),
+    pA = c(runif(nyear, 0.5, 1)),
+    R = c(NA, rep(1, nyear - 1)),
+    JUV = c(NA, rep(1, nyear - 1)),
+    IM = c(NA, rep(1, nyear - 1)),
+    muY = c(rnorm(nyear, 1.4, 0.4)),
+    muA = c(rnorm(nyear, 1.6, 0.4)),
+    Sj = c(runif((nyear - 1), 0, 0.6)),
+    Sy = c(runif((nyear - 1), 0.2, 0.8)),
+    Sa = c(runif((nyear - 1), 0.2, 1))
+  )}
 
 # 4. Combine all data into a list
 vulpes <- list(

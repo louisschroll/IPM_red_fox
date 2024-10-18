@@ -1,0 +1,13 @@
+
+model {
+  # Priors and linear models
+  # Cell probabilities
+  for (i in 1:k){                           # Loop over all cells
+    d[i] ~ dgamma(1, 1)
+    pi[i] <- d[i] / sum(d[])
+  }
+  # Likelihood
+  for (i in 1:n){
+    C[i] ~ dcat(pi)
+  }
+}

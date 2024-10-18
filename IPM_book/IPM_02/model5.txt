@@ -1,0 +1,30 @@
+
+model {
+  # Priors and linear models
+  phi ~ dunif(0, 1)                         # Apparent survival probability
+  p ~ dunif(0, 1)                           # Recapture probability
+
+  # Vectors of cell probabilities in the three multinomials
+  # Release cohort 1
+  pi1[1] <- phi * p                         # First recaptured in recap year 2
+  pi1[2] <- phi^2 * (1-p) * p               # First recaptured in recap year 3
+  pi1[3] <- phi^3 * (1-p)^2 * p             # First recaptured in recap year 4
+  pi1[4] <- 1 - sum(pi1[1:3])               # Never recaptured
+
+  # Release cohort 2
+  pi2[1] <- 0                               # Takes account of structural zero counts
+  pi2[2] <- phi * p
+  pi2[3] <- phi^2 * (1-p) * p
+  pi2[4] <- 1 - sum(pi2[1:3])
+
+  # Release cohort 3
+  pi3[1] <- 0                               # Accounts for structural zero counts
+  pi3[2] <- 0                               # Accounts for structural zero counts
+  pi3[3] <- phi * p
+  pi3[4] <- 1 - sum(pi3[1:3])
+
+  # Likelihood: one multinomial for each row in the m-array
+  marray[1,] ~ dmulti(pi1, R[1])            # MN for release cohort 1
+  marray[2,] ~ dmulti(pi2, R[2])            # MN for release cohort 2
+  marray[3,] ~ dmulti(pi3, R[3])            # MN for release cohort 3
+}

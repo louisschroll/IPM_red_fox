@@ -1,0 +1,20 @@
+
+model {
+  # Prior
+  theta ~ dgamma(15, 0.5)                                                        ## time invariant theta
+
+  # likelihood
+  for (t in 1:t.census) { 
+    for (i in 1:n[t]) {
+      zeros[i, t] <- 0
+      zeros[i, t] ~ dpois(phi[i, t]) # likelihood is exp(-phi[i,t])
+      # -log(likelihood)
+      phi[i, t] <- -(log(2 * theta / 3.14) / 2 - theta * pow(x[i, t], 2) / 2)     ## estimation of detection function from available value
+    } #i
+
+  # derived parameters
+  D[t] <- nind[t] * sqrt(2 * theta / 3.14) / (2 * L[t])                       ## density estimation per year with all number of encountered foxes
+  N[t] <- D[t] * 366                                                              ## effective estimation per year given the surface of the area
+ } #t
+}
+

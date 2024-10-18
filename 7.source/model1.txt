@@ -1,0 +1,22 @@
+
+  model {
+    # Priors
+    sigma ~ dunif(0,1000)  # Half-normal scale
+    psi ~ dunif(0,1)       # DA parameter
+
+    # Likelihood
+    for(i in 1:(nind+nz)){
+      # Process model
+      z[i] ~ dbern(psi)   # DA variables
+      x[i] ~ dunif(0, B)  # Distribution of distances
+      # Observation model
+      logp[i] <- -((x[i] * x[i]) / (2 * sigma * sigma)) # Half-normal detection fct.
+      p[i] <- exp(logp[i])
+      mu[i] <- z[i] * p[i]
+      y[i] ~ dbern(mu[i]) # Simple Bernoulli measurement error process
+    }
+    # Derived quantities
+    N <- sum(z[1:(nind + nz)]) # Population size
+    # D <- N / 60                # Density, with A = 60 km^2 when B = 500
+  }
+  

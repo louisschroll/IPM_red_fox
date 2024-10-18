@@ -1,4 +1,4 @@
-Date	Julian	Idren	Season	Year	GIC	Class	Site	Weigth	Sex	ModeFDC	Mode	AgeMAT	Age	Info	Status	Type	Count	Periode
+Date	       Julian	Idren	Season	Year	GIC	Class	Site	Weigth	Sex	ModeFDC	Mode	AgeMAT	Age	Info	Status	Type	Count	Periode
 03/02/2001	034	D1FI254	1	2001	D	D1	FDC35	6,2	F	C	C	0	1	NA	NA	NA	NA	P1
 03/02/2001	034	D1FI255	1	2001	D	D1	FDC35	6	F	C	C	0	1	NA	NA	NA	NA	P1
 10/02/2001	041	D1FI274	1	2001	D	D1	FDC35	6,2	F	C	C	3	4	NA	NA	NA	NA	P1

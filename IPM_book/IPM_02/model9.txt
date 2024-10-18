@@ -1,0 +1,23 @@
+
+model {
+  # Priors and linear models: shared for models of both data sets
+  alpha ~ dunif(-10, 10)                            # Abundance intercept
+  mean.lam <- exp(alpha)
+  beta ~ dnorm(0, 0.01)
+
+  # Likelihoods for Data Sets 1 and 2
+  # Note identical alpha and beta for both data sets
+  for (i in 1:nsites1){                             # Data Set 1
+  C[i] ~ dpois(lambda1[i])
+    log(lambda1[i]) <- alpha + beta * selev1[i]
+  }
+  for (j in 1:nsites2){                             # Data Set 2
+    y[j] ~ dbern(psi[j])
+    cloglog(psi[j]) <- alpha + beta * selev2[j]
+
+    # Alternative implementation of same model for Data Set 2
+    # y[j] ~ dbern(psi[j])
+    # psi[j] <- 1 - exp(-lambda2[j])
+    # log(lambda2[j]) <- alpha + beta * selev2[j]
+  }
+}

@@ -1,0 +1,22 @@
+
+model {
+  # Priors and linear models
+  for (j in 1:npop){
+    alpha[j] ~ dnorm(mu.alpha, tau.alpha)               # Random effects
+  }
+  # Priors for hyper-parameters
+  mu.alpha ~ dnorm(0, 1.0E-06)                          # Hyperprior for mean hyperparam
+  tau.alpha <- pow(sd.alpha, -2)
+  sd.alpha ~ dunif(0, 100)                              # Hyperprior for sd hyperparam
+
+  # Other priors
+  beta ~ dnorm(0, 1.0E-06)                              # Slope of mass on elevation
+  tau <- pow(sd, -2)
+  sd ~ dunif(0, 1000)                                   # 1/residual variance
+
+  # 'Likelihood'
+  for (i in 1:n){
+    y[i] ~ dnorm(mu[i], tau)
+    mu[i] <- alpha[pop[i]] + beta * elev[i]
+  }
+}

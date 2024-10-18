@@ -1,0 +1,12 @@
+
+model {
+  # Priors and linear models
+  # Cell probabilities for the multinomial
+  for (i in 1:k){                           # Loop over all cells in the multinomial
+    d[i] ~ dgamma(1, 1)
+    pi[i] <- d[i] / sum(d[])
+  }
+  
+  # Likelihood for set of multinomial counts
+  C ~ dmulti(pi, N)
+}

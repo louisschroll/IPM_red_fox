@@ -5,7 +5,11 @@ library(tidyverse)
 
 harvest_fox_10 <- read_excel("0.raw_data/prelevements/prvtsCONNUSFDC10_copie.xlsx") %>% 
   janitor::clean_names() %>% 
-  mutate(total = as.numeric(total))
+  mutate_at(vars(piegeur:total), as.numeric)
+
+harvest_fox_35 <- read_excel("0.raw_data/prelevements/prvtsCONNUSFDC35_copie.xlsx") %>% 
+  janitor::clean_names() %>% 
+  mutate_at(vars(pieg:tot), as.numeric)
 
 colnames(harvest_fox_10)
 
@@ -71,7 +75,6 @@ harvest_fox_10 %>%
 harvest_fox_10 %>% 
   select(piegeur:route_ni) %>% 
   pivot_longer(cols = everything(), names_to = "method", values_to = "nb_kill") %>% 
-  mutate(nb_kill = as.numeric(nb_kill)) %>% 
   filter(nb_kill > 0) %>% 
   ggplot(aes(x = method, y = nb_kill, fill = method)) +
   geom_boxplot() +
@@ -81,8 +84,13 @@ harvest_fox_10 %>%
 harvest_fox_10 %>% 
   select(piegeur:route_ni) %>% 
   pivot_longer(cols = everything(), names_to = "method", values_to = "nb_kill") %>% 
-  mutate(nb_kill = as.numeric(nb_kill)) %>% 
   group_by(method) %>% 
   summarise(sum_kill = sum(nb_kill),
             mean_kill = mean(nb_kill),
             mean_kill2 = mean(nb_kill[nb_kill > 0]))
+
+
+  
+
+
+

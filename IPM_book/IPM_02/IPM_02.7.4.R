@@ -46,6 +46,7 @@ model {
     d[i] ~ dgamma(1, 1)
     pi[i] <- d[i] / sum(d[])
   }
+  
   # Likelihood for set of multinomial counts
   C ~ dmulti(pi, N)
 }

@@ -14,15 +14,15 @@ setwd("c:/Users/etu-devillard/Documents/1. THESE/data/renard/FDC35/Vital_rate/Wi
 sink("vulpestot.bug")
 cat("
 ##########################################################################
-#  Integrated population model for the red fox population in Domagné France
+#  Integrated population model for the red fox population in Domagne France
 #
 #  Age structured, female-based model (2 age classes-1-year )
 #  Pre-breeding census
 #
 #  Combination of:
 #	- Distance sampling census (2002-2010): --> state-space model
-#	- productivity for harvest data(2002-2006) --> Poisson regression
-#	- age-at-harvest data from trapping and hunting(2002-2006) --> yearling and adult survival:
+#	- productivity for harvest data (2002-2006) --> Poisson regression
+#	- age-at-harvest data from trapping and hunting (2002-2006) --> yearling and adult survival:
 #		model by Udevitz & Gonan (2012)
 #
 ##########################################################################
@@ -125,8 +125,6 @@ for (t in 1:nyear) {
 
 } #t
 
-
-
     ########################################
 		# 3.2.1 Proportion of breeding female
 		########################################
@@ -148,18 +146,18 @@ for (t in 1:nyear) {
 
 	for (t in 2:t.census){
 
-		psi1[t] <- (pY[t-1]* exp(muY[t-1])* 0.5 * Ny[t-1])+ (pA[t-1]* exp(muA[t-1])* 0.5 * Na[t-1])
+		psi1[t] <- (pY[t-1] * exp(muY[t-1])* 0.5 * Ny[t-1])+ (pA[t-1]* exp(muA[t-1])* 0.5 * Na[t-1])
 		JUV[t] ~ dpois(psi1[t])
-       R[t] ~ dbin(Sj[t-1], JUV[t])		# number of local recruits
+    R[t] ~ dbin(Sj[t-1], JUV[t])		# number of local recruits
 
-		psi2[t] <- (pY[t-1]* Ny[t-1] + pA[t-1] * Na[t-1]) * im[t-1]
-		  IM[t] ~ dpois(psi2[t])		  # number of immigrants
+		psi2[t] <- (pY[t-1] * Ny[t-1] + pA[t-1] * Na[t-1]) * im[t-1]
+		IM[t] ~ dpois(psi2[t])		  # number of immigrants
 
 		Ny[t] <- R[t] + IM[t]      # number of yearlings (age 1 class)
 
 		Na1[t] ~ dbin(Sy[t-1], Ny[t-1])
     Na2[t] ~ dbin(Sa[t-1], Na[t-1])
-      Na[t] <- Na1[t] + Na2[t]   # number of adults (age 2 class)
+    Na[t] <- Na1[t] + Na2[t]   # number of adults (age 2 class)
 
 		} # t
 
@@ -186,7 +184,7 @@ sink()
 
 # 1. Census data (2002-2010)
 
-domD<- c(0.851,0.973,1.032,1.043,1.075,1.35,1.048,1.355,1.268)
+domD <- c(0.851, 0.973, 1.032, 1.043, 1.075, 1.35, 1.048, 1.355, 1.268)
 domVD<-c( 0.007,0.01,0.017,0.0165,0.011,0.031,0.012,0.019,0.015	)
 
 N<-round(domD*366 )
@@ -214,7 +212,7 @@ DOM<-as.matrix(table(tab1$Age[tab1$GIC=="D"], tab1$Year[tab1$GIC=="D"]))        
   X <- rbind(Xit[1:2,],colSums(Xit[3:nage,]))
 
 # 3. Data on productivity (2002-2006)
-tab2<-subset(tab1, tab1$Info=="1"& tab1$GIC=="D")                               # keep Domagné female with information on repro
+tab2<-subset(tab1, tab1$Info=="1"& tab1$GIC=="D")                               # keep Domagn? female with information on repro
 dom<- subset(tab2, tab2$Year!="1"& tab2$Year!="7")                              # keep only 2002-2006 for a better quality data
 
 newborns<-cbind(tapply(dom$Count[dom$Year=="2"],dom$Age2.[dom$Year=="2"],sum,na.rm=T),
@@ -2019,24 +2017,24 @@ par(mfrow=c(2,2))
 plot(lambda~H,pch=16)
 summary(lm(lambda~H))
 abline (lm(lambda~H))
-text(x = 0.4, y = 0.9, "r² = 0.001 ", pos = 4, font = 3, cex = 0.8)
+text(x = 0.4, y = 0.9, "r? = 0.001 ", pos = 4, font = 3, cex = 0.8)
 text(x = 0.4, y = 0.85, "p(lm) = 0.90", pos = 4, font = 3, cex = 0.8)
 
 plot(Sa~H,pch=16)
 summary(lm(Sa~H))
 abline (lm(Sa~H))
-text(x = 0.4, y = 0.9, "r² = -0.06 ", pos = 4, font = 3, cex = 0.8)
+text(x = 0.4, y = 0.9, "r? = -0.06 ", pos = 4, font = 3, cex = 0.8)
 text(x = 0.4, y = 0.85, "p(lm) = 0.56", pos = 4, font = 3, cex = 0.8)
 
 plot(Sj~H,pch=16)
 summary(lm(Sj~H))
 abline (lm(Sj~H))
-text(x = 0.4, y = 0.9, "r² = -0.078 ", pos = 4, font = 3, cex = 0.8)
+text(x = 0.4, y = 0.9, "r? = -0.078 ", pos = 4, font = 3, cex = 0.8)
 text(x = 0.4, y = 0.85, "p(lm) = 0.66", pos = 4, font = 3, cex = 0.8)
 
 plot(Sj~Sa,pch=16)
 summary(lm(Sj~Sa))
 abline (lm(Sj~Sa))
-text(x = 0.4, y = 0.9, "r² = -0.06 ", pos = 4, font = 3, cex = 0.8)
+text(x = 0.4, y = 0.9, "r? = -0.06 ", pos = 4, font = 3, cex = 0.8)
 text(x = 0.4, y = 0.85, "p(lm) = 0.56", pos = 4, font = 3, cex = 0.8)
 

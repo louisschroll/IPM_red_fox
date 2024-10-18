@@ -1,0 +1,24 @@
+
+model{
+  # Priors
+  psi ~ dunif(0, 1)
+  sigma ~ dunif(0, 1000)
+
+  # Likelihood
+  # construct conditional detection probability and Pr(x) for each bin
+  for(g in 1:nD){        # midpt = mid point of each cell
+    log(p[g]) <- -midpt[g] * midpt[g] / (2 * sigma * sigma)
+    pi[g] <- delta / B  # probability of x in each interval
+  }
+
+  for(i in 1:(nind+nz)){
+    z[i] ~ dbern(psi)             # model for individual covariates
+    dclass[i] ~ dcat(pi[])        # population distribution of distance class
+    mu[i] <- z[i] * p[dclass[i]]  # p depends on distance class
+    y[i] ~ dbern(mu[i])
+  }
+  # Derived quantities: Population size and density
+  N <- sum(z[])
+  D <- N / 60
+}
+
