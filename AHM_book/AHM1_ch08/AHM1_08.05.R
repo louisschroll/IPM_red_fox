@@ -1,7 +1,7 @@
 #   Applied hierarchical modeling in ecology
 #   Modeling distribution, abundance and species richness using R and BUGS
 #   Volume 1: Prelude and Static models
-#   Marc Kéry & J. Andy Royle
+#   Marc K?ry & J. Andy Royle
 #
 # Chapter 8. Modeling abundance using hierarchical distance sampling (HDS)
 # =========================================================================
@@ -60,7 +60,7 @@ model{
     z[i] ~ dbern(psi)                    # Data augmentation variables
     d[i] ~ dunif(0, B)                   # distance uniformly distributed
     p[i] <- exp(-d[i]*d[i]/(2*sigma[site[i]]*sigma[site[i]])) # Det. function
-    mu[i] <- z[i]* p[i]                  # 'straw man' for WinBUGS
+    mu[i] <- z[i] * p[i]                  # 'straw man' for WinBUGS
     y[i] ~ dbern(mu[i])                  # basic Bernoulli random variable
     site[i] ~ dcat(site.probs[1:nsites]) # Population distribution among sites
   }
@@ -94,22 +94,25 @@ params <- c("alpha0", "alpha1", "beta0", "beta1", "psi", "Ntotal", "D")
 # MCMC settings
 ni <- 12000   ;   nb <- 2000   ;   nt <- 2   ;   nc <- 3
 
-# Call BUGS (ART 33 min) ...
-# bd <- "c:/Program Files/WinBUGS14/" # Never forget this for WinBUGS
-out1 <- bugs(win.data, inits, params, "model1.txt",
-   # n.thin=nt, n.chains=nc, n.burnin=nb, n.iter=ni, debug=TRUE, bugs.dir = bd)
-   n.thin=nt, n.chains=nc, n.burnin=nb, n.iter=ni, debug=FALSE, bugs.dir = bd) #~~~~~ for automated testing
 
 # ... or try JAGS for a change (ART 6 min)
 library(jagsUI)       # never forget to load jagsUI
-out1 <- jags(win.data, inits, params, "model1.txt",
-  # n.thin=nt, n.chains=nc, n.burnin=nb, n.iter=ni)
-  n.thin=nt, n.chains=nc, n.burnin=nb, n.iter=ni, parallel=TRUE)  # ~~~~ speeds up testing
+out1 <- jags(
+  win.data,
+  inits,
+  params,
+  "model1.txt",
+  n.thin = nt,
+  n.chains = nc,
+  n.burnin = nb,
+  n.iter = ni,
+  parallel = TRUE
+)  # ~~~~ speeds up testing
 
 # Summarize posterior output
 print(out1, 2)
 sum(tmp$N.true)
-
+MCMCvis::MCMCtrace(out1, params = params, pdf = F)
 # Prepare data
 delta <- 0.1                    # width of distance bins for approx.
 midpt <- seq(delta/2, B, delta) # make mid-points and chop up data
