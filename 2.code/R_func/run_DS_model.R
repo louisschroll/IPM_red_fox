@@ -45,7 +45,7 @@ run_DS_model <- function(DS_data,
   )
   
 
-  # BUGS model for line transect HDS (NOT point transects!)
+  # JAGS model for line transect HDS (NOT point transects!)
   cat(
     "
 model{
@@ -82,6 +82,8 @@ model{
   area <- nsites * 2 * B * transect_len
   D <- Ntotal / area
   N_gic <- D * size_study_area
+  
+  # N_gic <- Ntotal / (nsites * 2 * B * transect_len) * size_study_area
 }
 ", fill = TRUE, file = "model1.txt")
   
