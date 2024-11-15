@@ -44,7 +44,7 @@ t(N) %>% as_tibble() %>%
 DS_data <- data.frame()
 for (year in 1:(Tmax + 1)){
   DS_data <- rbind(DS_data, 
-                   cbind(year, sim_DS_data(Ntot = sum(N[, year]), nsites = 100)$data))
+                   cbind(year, sim_DS_data(Ntot = sum(N[, year]), nsites = 50)$data))
 }
 
 
@@ -76,6 +76,8 @@ t(N) %>% as_tibble() %>%
 
 
 # ------
+
+dyn_output <- run_dynamic_DS_model(DS_data)
 
 
 t(N) %>% as_tibble() %>% 
