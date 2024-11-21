@@ -79,10 +79,11 @@ model{
 
   # Derived parameter: total population size across all sites
   Ntotal <- sum(z[1:(nind + nz)])
+  Ntot2 <- sum(N[1:nsites])
   area <- nsites * 2 * B * transect_len
   D <- Ntotal / area
   N_gic <- D * size_study_area
-  
+  N_gic2 <- Ntot2 / area * size_study_area
   # N_gic <- Ntotal / (nsites * 2 * B * transect_len) * size_study_area
 }
 ", fill = TRUE, file = "model1.txt")
@@ -97,7 +98,7 @@ model{
   }
   
   # Parameters to save
-  params <- c("sigma", "beta0", "psi", "Ntotal", "D", "N_gic")
+  params <- c("sigma", "beta0", "psi", "Ntotal", "D", "N_gic", "Ntot2", "N_gic2")
   
   # MCMC settings
   ni <- 12000

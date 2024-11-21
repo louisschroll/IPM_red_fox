@@ -18,12 +18,12 @@ run_dynamic_DS_model <- function(DS_data,
   
   year <- c(DS_data$year, rep(unique(DS_data$year), each = nz))
   
-  mean.sj <- 0.37
-  mean.sa <- 0.56
-  mean.f1 <- 1.4
-  mean.fa <- 1.6
-  surv_rate <- c(mean.sj, rep(mean.sa, age_max))
-  fec_rate <- c(mean.f1, rep(mean.fa, 4))
+  # mean.sj <- 0.37
+  # mean.sa <- 0.56
+  # mean.f1 <- 1.4
+  # mean.fa <- 1.6
+  # surv_rate <- c(mean.sj, rep(mean.sa, age_max))
+  # fec_rate <- c(mean.f1, rep(mean.fa, 4))
   
   # Bundle and summarize data set
   win.data <- list(
@@ -37,43 +37,20 @@ run_dynamic_DS_model <- function(DS_data,
     y = y,
     d = d,
     site = site,
-    year = year,
-    age_max = age_max,
-    surv_rate = surv_rate,
-    fec_rate = fec_rate
+    year = year
+    # age_max = age_max,
+    # surv_rate = surv_rate,
+    # fec_rate = fec_rate
   )
   
   
   # JAGS model for line transect HDS (NOT point transects!)
   cat("model{
-    ## Population model
-    for(a in 1:age_max){                   
-      N[a, 1] ~ dcat(rep(1, 1001))
-    }	
-    
-    # Project population
-    for (t in 1:nyears){                          # t is index for years
-      # Age class 0 (index = 1): local reproduction
-      N[1, t+1] ~ dpois(surv_rate[1] * sum(fec_rate * N[1:age_max, t]))
-      
-      # Age classes 1 to 3 (indeces = 2, 3, 4): age classes 0, 1, and 2 survivors    
-      for(a in 1:(age_max-2)){                   # a is index for age class
-        N[a+1, t+1] ~ dbinom(surv_rate[a], N[a, t])
-      }		
-      
-      # Age class 4+ (index = age_max = 5): age class 4 and 5+ survivors
-      N[age_max, t+1] ~ dbinom(surv_rate[age_max], N[age_max-1, t] + N[age_max, t])
-    }
-  
-    # DERIVED QUANTITIES
-    for(t in 1:nyears){
-      Ntot[t] <- sum(N[1:age_max, t])
-    }
-    
-    
-    ## Distance-sampling part
+    ## Distance-sampling
     # Prior distributions
-    # beta0 ~ dunif(0,10)   # Intercept of lambda
+    for (t in 1:nyears) {  
+      beta0[t] ~ dunif(0,10)   # Intercept of lambda
+    }
     alpha0 ~ dunif(-10,10)  # Intercept of log(sigma)
     log(sigma) <- alpha0
     
@@ -83,8 +60,8 @@ run_dynamic_DS_model <- function(DS_data,
         
         # Model for abundance
         area_site[t, s] <- 2 * B * transect_len
-        lambda[t, s] <- Ntot[t] * area_site[t, s] / size_study_area         # here lambda is defined depending on Ntot, derived from the population model
-        N_ds[t, s] ~ dpois(lambda[t, s])               # Realized abundance at site s in year t
+        lambda[t, s] <- beta0[t]
+        N_site[t, s] ~ dpois(lambda[t, s])               # Realized abundance at site s in year t
         site.probs[t, s] <- lambda[t, s] / sum(lambda[t, 1:nsites])  # Site probability
   
         # Detection model
@@ -102,14 +79,17 @@ run_dynamic_DS_model <- function(DS_data,
       d[i] ~ dunif(0, B)                            # Distance uniformly distributed
       p[i] <- exp(-d[i] * d[i] / (2 * sigma * sigma))  # Detection function sigma[year[i], site[i]]
       y[i] ~ dbern(z[i] * p[i])                     # Bernoulli random variable
-  
     }
   
     # Derived parameter for total population size across all sites
-    Ntotal_ds <- sum(z[1:(nind + npseudo_ind)])
+    # Ntotal_ds <- sum(z[1:(nind + npseudo_ind)])
     size_area_sampled <- nsites * 2 * B * transect_len
-    D <- Ntotal_ds / size_area_sampled
-    N_gic <- D * size_study_area
+    # D <- Ntotal_ds / size_area_sampled
+    # N_gic <- D * size_study_area
+    for (t in 1:nyears){
+      Ntot[t] <- sum(N_site[t, 1:nsites])
+      N_gic[t] <- Ntot[t] / size_area_sampled * size_study_area
+    }
   }
 ", fill = TRUE, file = "model1.txt")
   
@@ -117,8 +97,9 @@ run_dynamic_DS_model <- function(DS_data,
   # Inits
   inits <- function() {
     list(alpha0 = 0,
-         z = y,
-         N = matrix(10, nrow = age_max, ncol = nyears+1)) #rpois(n = age_max * (nyears+1), lambda = c(120, 50, 40, 30, 20))
+         beta0 = rep(0, nyears),
+         z = y)
+        # N = matrix(10, nrow = age_max, ncol = nyears+1)) #rpois(n = age_max * (nyears+1), lambda = c(120, 50, 40, 30, 20))
   }
   
   # Parameters to save

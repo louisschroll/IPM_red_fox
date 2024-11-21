@@ -1,0 +1,49 @@
+model{
+
+##noninformative priors
+alphaS~dunif(0,20)
+betaS1~dunif(-10,10)
+beta1~dunif(-20,20)
+beta2~dunif(-20,20)
+beta3~dunif(-20,20)
+alpha~dunif(-20,20)
+gamma~dunif(0,5)
+
+r~dunif(0,5)
+rout<-log(r)
+
+for (j in 1:nsites){
+
+   log(sigma[j])<-alphaS+betaS1*chap[j]  #detection parameter
+
+      for(k in 1:nG){ 
+        log(p[k,j])<- -xg[k]*xg[k]/(2*sigma[j]*sigma[j])  						
+        f[k,j]<- p[k,j]*pi[k]                         
+        fc[k,j]<- f[k,j]/pcap[j]       
+        fct[k,j]<-fc[k,j]/sum(fc[1:nG,j])                 
+      }
+
+   pcap[j]<-sum(f[1:nG,j])  # overall detection probability
+
+
+### Abundance model for Yr1, as in Sillett et al 2012
+   log(lambda[j,1])<- alpha +beta1*chap[j] + beta2*chap2[j] +beta3*elev[j]
+   y[j,1]~ dbin(pcap[j],N[j,1])
+   N[j,1]~ dnegbin(prob[j,1], r)
+   prob[j,1]<- r/(r+lambda[j,1])
+
+
+	for (t in 2:T){
+	  N[j,t]~ dpois(N[j, t-1]*gamma)
+      	  y[j,t]~ dbin(pcap[j],N[j,t]) 
+	}
+
+}
+
+     ### all years' worth of data in one long vector  
+      for(i in 1:nind){
+      dclass[i] ~ dcat(fct[1:nG,site[i]]) 
+      }
+
+
+}
