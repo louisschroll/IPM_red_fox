@@ -1,0 +1,9 @@
+{
+  "citationExportFormat": "biblatex",
+  "literatureNoteTitleTemplate": "@{{citekey}}",
+  "literatureNoteFolder": "Litterature Notes",
+  "literatureNoteContentTemplate": "## {{title}}\n[{{citekey}}]({{zoteroSelectURI}})\n\n>[!info] Tags\n>**Tags**: #ToRead\n\n>[!tldr] Metadata\n>**Authors**: {{authorString}}\n>**Title**: {{title}}\n>**Year**: {{year}}\n>**Citekey**: {{citekey}}\n>**DOI**: {{DOI}}\n\n---\n> [!summary] Quick Summary\n> Summarize the article in a few sentences, including the main research question and key findings.\n\n---\n\n> [!faq] Background and Introduction\n- **Context**:  \n- **Research Question**:  \n- **Hypothesis**:  \n\n---\n\n> [! example] Methodology\n- **Study Population**:  \n- **Sample Size**:  \n- **Data**:  \n- **Measured Variables**:  \n- **Model**:\n---\n\n> [! done] Results\n- Summarize the key results.\n- Include important statistics (p-values, confidence intervals, etc.).\n\n---\n\n> [! error] Discussion & conclusion\n- **Interpretation of Results**:  \n- **Study Limitations**:  \n- **Comparison to Previous Research**:  \n- **Main Conclusion**:  \n- **Practical Implications**:  \n- **Suggestions for Future Research**:  \n\n---\n\n> [! quote] Key Quotes\n- Note down important quotes or notable elements from the article.\n\n---\n\n> [! tip] Personal Reflections\n- Write your own observations, follow-up ideas, or personal thoughts here.\n\n",
+  "markdownCitationTemplate": "[@{{citekey}}]",
+  "alternativeMarkdownCitationTemplate": "@{{citekey}}",
+  "citationExportPath": "Fox project.bib"
+}

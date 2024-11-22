@@ -48,11 +48,12 @@ for (year in 1:(Tmax + 1)){
 }
 
 
-N_estimates <- N_estimates_upper <- N_estimates_lower <- c()
+N_estimates <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
 
 for (i in 1:(Tmax + 1)){
   out1 <- run_DS_model(DS_data %>% filter(year == i) %>% select(-year), nsites = 50)
   N_estimates <- c(N_estimates, out1$mean$N_gic)
+  N_estimates2 <- c(N_estimates2, out1$mean$N_gic2)
   N_estimates_upper <- c(N_estimates_upper, out1$q2.5$N_gic)
   N_estimates_lower <- c(N_estimates_lower, out1$q97.5$N_gic)
 }
@@ -61,6 +62,7 @@ t(N) %>% as_tibble() %>%
   mutate(year = 1:nrow(.),
          Ntot = rowSums(.),
          N_estimates = N_estimates,
+         N_estimates2 = N_estimates2,
          N_estimates_upper = N_estimates_upper,
          N_estimates_lower = N_estimates_lower) %>% 
   pivot_longer(-c(year, N_estimates_upper, N_estimates_lower),
@@ -99,4 +101,77 @@ t(N) %>% as_tibble() %>%
   theme_minimal()
 
 
+
+# Data bundle
+jags.data <- list(
+  Nhat = out4$mean$totalN,
+  var.Nhat = out4$sd$totalN ^ 2,
+  T = length(out4$mean$totalN)
+)
+
+# Write JAGS model file
+cat(
+  file = "model3.txt",
+  "model {
+    # Priors and linear models
+    mu.lam ~ dunif(0, 10) # Prior for mean growth rate
+    sig.lam ~ dunif(0, 10) # Prior for sd of growth rate
+    sig2.lam <- pow(sig.lam, 2)
+    tau.lam <- pow(sig.lam, -2)
+    sig.ystar ~ dunif(0, 10000) # Prior for sd of observation process
+    sig2.ystar <- pow(sig.ystar, 2)
+    tau.ystar <- pow(sig.ystar, -2)
+    
+    # Likelihood
+    # Model for the initial population size: uniform priors
+    N[1] ~ dunif(0, 500)
+    # Process model over time: our model of population dynamics
+    for (t in 1:(T - 1)) {
+      lambda[t] ~ dnorm(mu.lam, tau.lam)
+      N[t + 1] <- N[t] * lambda[t]
+    }
+    
+    # Observation process for the abundance estimates with their SEs
+    for (t in 1:T) {
+      Nhat[t] ~ dnorm(ystar[t], tau.se[t])
+      tau.se[t] <- 1 / var.Nhat[t] # Assumed known and given by variance of Nhat
+      ystar[t] ~ dnorm(N[t], tau.ystar)
+    }
+  }
+")
+
+# Initial values
+inits <- function() {
+  list(sig.lam = runif(1, 0, 1))
+}
+# Parameters monitored
+parameters <- c("lambda",
+                "mu.lam",
+                "sig2.ystar",
+                "sig2.lam",
+                "sig.ystar",
+                "sig.lam",
+                "N",
+                "ystar")
+# MCMC settings
+ni <- 50000
+nb <- 25000
+nc <- 3
+nt <- 25
+na <- 10000
+# Call JAGS from R (ART <1 min), check convergence and summarize posteriors
+out5 <- jags(
+  jags.data,
+  inits,
+  parameters,
+  "model3.txt",
+  n.iter = ni,
+  n.burnin = nb,
+  n.chains = nc,
+  n.thin = nt,
+  n.adapt = na,
+  parallel = TRUE
+)
+traceplot(out5) # Not shown
+print(out5, 3) # Not shown
 
