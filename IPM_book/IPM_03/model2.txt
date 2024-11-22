@@ -1,0 +1,24 @@
+
+model {
+  # Priors
+  for (t in 1:nyears){                              # Loop over years
+    lambda[t] ~ dunif(0, 100)                       # Expected abundance
+    p[t] ~ dunif(0, 1)                              # Detection probability
+  }
+
+  # Ecological model for true abundance
+  for (i in 1:nsites){                              # Loop over 267 sites
+    for (t in 1:nyears){                            # Loop over 25 years
+      N[i,t] ~ dpois(lambda[t])
+      # Observation model for replicated counts
+      for (j in 1:nsurveys){                        # Loop over 3 occasions
+        C[i,j,t] ~ dbin(p[t], N[i,t])
+      } #j
+    } #t
+  } #i
+
+  # Total abundance across all surveyed sites as a derived quantity
+  for (t in 1:nyears){
+    totalN[t] <- sum(N[,t])
+  }
+}

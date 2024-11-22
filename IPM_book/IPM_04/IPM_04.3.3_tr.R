@@ -20,7 +20,8 @@ library(IPMbook); library(jagsUI)
 
 # Some examples of how the simMHB function works
 # Explicit default values for all function arguments
-str(dat <- simMHB(nsites=267, nsurveys=3, nyears=25, mean.lam=1, mean.beta=0.03,
+str(dat <- simMHB(nsites=267, nsurveys=3, nyears=25, mean.lam=1, 
+                  mean.beta=0.03,
     sd.lam=c(0.5, 0.05), mean.p=0.6, beta.p=0.1, show.plot=TRUE))
 str(dat <- simMHB())                          # Same, implicit
 str(dat <- simMHB(nsites=1000))               # More sites

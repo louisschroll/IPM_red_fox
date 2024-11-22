@@ -86,7 +86,7 @@ t(N) %>% as_tibble() %>%
          N_estimates = N_estimates,
          N_estimates_upper = N_estimates_upper,
          N_estimates_lower = N_estimates_lower,
-         N_est2 = out1$mean$Ntot) %>% 
+         N_est2 = dyn_output$mean$Ntot) %>% 
   pivot_longer(-c(year, N_estimates_upper, N_estimates_lower),
                names_to = "age_class") %>%
   mutate(N_estimates_upper = ifelse(age_class == "N_estimates", N_estimates_upper, NA),

@@ -125,10 +125,10 @@ run_dynamic_DS_model <- function(DS_data,
   params <- c("sigma", "psi", "Ntot", "D", "N_gic")
   
   # MCMC settings
-  ni <- 12000
-  nb <- 2000
+  ni <- 1200
+  nb <- 200
   nt <- 1
-  nc <- 3
+  nc <- 1
   
   # Run the model in JAGS
   out1 <- jags(

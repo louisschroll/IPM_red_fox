@@ -1,0 +1,15 @@
+
+model {
+  # Model for initial state
+  N[1,1] <- N1
+  N[2,1] <- N2
+
+  # Loop over time
+  for (t in 1:T){
+    # Population model
+    N[1,t+1] ~ dpois(sj * (f1 * N[1,t] + fa * N[2,t]))
+    N[2,t+1] ~ dbin(sa, (N[1,t] + N[2,t]))
+    extinct[t] <- equals(N[1,t+1] + N[2,t+1], 0)      # Determines whether
+        # population is still thriving (extinct = 0) or went extinct (extinct = 1)
+  }
+}

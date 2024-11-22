@@ -1,0 +1,47 @@
+
+model {
+  # Calculate precision for temporal variability of demographic rates
+  tau.logit.sj <- pow(sd.sj.t, -2)
+  tau.logit.sa <- pow(sd.sa.t, -2)
+  tau.f1 <- pow(sd.f1.t, -2)
+  tau.fa <- pow(sd.fa.t, -2)
+
+  # Use of RNG to accomodate temporal variability of demographic rates (process variability)
+  for (t in 1:T){
+    sj[t] <- ilogit(logit.sj[t])                      # Backt. from logit to natural scale
+    logit.sj[t] ~ dnorm(logit(mean.sj), tau.logit.sj)
+    sa[t] <- ilogit(logit.sa[t])                      # Backt. from logit to natural scale
+    logit.sa[t] ~ dnorm(logit(mean.sa), tau.logit.sa)
+    f1[t] ~ dnorm(mean.f1, tau.f1)
+    fa[t] ~ dnorm(mean.fa, tau.fa)
+  }
+
+  # Model for initial state
+  N[1,1] <- 1
+  N[2,1] <- 1
+
+  # Loop over time
+  for (t in 1:T){
+    # Population model
+    N[1,t+1] <- sj[t] * (f1[t] * N[1,t] + fa[t] * N[2,t])
+    N[2,t+1] <- sa[t] * (N[1,t] + N[2,t])
+
+    # Annual growth rate on log scale
+    r.annual[t] <- log(N[1,t+1] + N[2,t+1]) - log(N[1,t] + N[2,t])
+  }
+  r <- mean(r.annual[u:T])
+  lambda <- exp(r)
+
+  # Sensitivity and elasticity of lambda to changes in sj
+  delta <- 0.001                                      # Size of perturbation
+  N.star[1,1] <- 1
+  N.star[2,1] <- 1
+  for (t in 1:T){
+    N.star[1,t+1] <- (sj[t] + delta) * (f1[t] * N.star[1,t] + fa[t] * N.star[2,t])
+    N.star[2,t+1] <- sa[t] * (N.star[1,t] + N.star[2,t])
+    r.annual.star[t] <- log(N.star[1,t+1] + N.star[2,t+1]) - log(N.star[1,t] + N.star[2,t])
+  }
+  r.star <- mean(r.annual.star[u:T])
+  s.sj <- (exp(r.star) - lambda) / delta
+  e.sj <- s.sj * mean.sj / lambda
+}

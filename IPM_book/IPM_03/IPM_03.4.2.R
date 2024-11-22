@@ -22,9 +22,17 @@ mean.fa <- 1.8        # Point estimate of productivity of adult females
 se.fa.e <- 0.1        # Uncertainty of productivity as SE on natural scale
 
 # Bundle data
-jags.data <- list(alpha.sj=getBeta2Par(mean.sj, se.sj.e)[1], beta.sj=getBeta2Par(mean.sj,
-    se.sj.e)[2], alpha.sa=getBeta2Par(mean.sa, se.sa.e)[1], beta.sa=getBeta2Par(mean.sa, se.sa.e)[2],
-    mean.f1=mean.f1, tau.f1=1/se.f1.e^2, mean.fa=mean.fa, tau.fa=1/se.fa.e^2, T=50)
+jags.data <- list(
+  alpha.sj = getBeta2Par(mean.sj, se.sj.e)[1],
+  beta.sj = getBeta2Par(mean.sj, se.sj.e)[2],
+  alpha.sa = getBeta2Par(mean.sa, se.sa.e)[1],
+  beta.sa = getBeta2Par(mean.sa, se.sa.e)[2],
+  mean.f1 = mean.f1,
+  tau.f1 = 1 / se.f1.e ^ 2,
+  mean.fa = mean.fa,
+  tau.fa = 1 / se.fa.e ^ 2,
+  T = 50
+)
 
 # Write JAGS model file
 cat(file="model3.txt", "
@@ -85,8 +93,18 @@ parameters <- c("lambda", "stable.stage.distr", "s.sj", "e.sj", "R0", "GT")
 ni <- 100000; nt <- 1; nb <- 0; nc <- 1; na <- 0
 
 # Call JAGS (ART <1 min) and summarize results
-out3 <- jags(jags.data, NULL, parameters, "model3.txt", n.adapt=na, n.chains=nc, n.thin=nt,
-    n.iter=ni, n.burnin=nb, DIC=FALSE)
+out3 <- jags(
+  jags.data,
+  NULL,
+  parameters,
+  "model3.txt",
+  n.adapt = na,
+  n.chains = nc,
+  n.thin = nt,
+  n.iter = ni,
+  n.burnin = nb,
+  DIC = FALSE
+)
 print(out3, 4)
 #                         mean     sd   2.5%    50%  97.5% overlap0 f
 # lambda                1.0223 0.0627 0.9102 1.0188 1.1553    FALSE 1
