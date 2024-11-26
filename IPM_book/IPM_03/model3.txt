@@ -1,0 +1,49 @@
+
+model {
+  # Random number generators (RNGs)
+  sj ~ dbeta(alpha.sj, beta.sj)           # These only *look* like priors
+  sa ~ dbeta(alpha.sa, beta.sa)           # ... but they are not
+  f1 ~ dnorm(mean.f1, tau.f1)             # ... as there is no estimation in this model
+  fa ~ dnorm(mean.fa, tau.fa)
+
+  # Initialize the population size nodes
+  N[1,1] <- 1
+  N[2,1] <- 1
+
+  # Loop over time
+  for (t in 1:T){
+    # Population model
+    N[1,t+1] <- sj * (f1 * N[1,t] + fa * N[2,t])
+    N[2,t+1] <- sa * (N[1,t] + N[2,t])
+
+    # Annual (realized) growth rate
+    ann.growth.rate[t] <- (N[1,t+1] + N[2,t+1]) / (N[1,t] + N[2,t])
+
+    # Scaled stage distributions
+    stage.distr[1,t] <- N[1,t+1] / (N[1,t+1] + N[2,t+1])
+    stage.distr[2,t] <- N[2,t+1] / (N[1,t+1] + N[2,t+1])
+  }
+  lambda <- ann.growth.rate[T]
+  stable.stage.distr <- stage.distr[,T]
+
+  # Sensitivity and elasticity of lambda to changes in sj
+  delta <- 0.001                          # size of perturbation
+  N.star[1,1] <- 1
+  N.star[2,1] <- 1
+  for (t in 1:T){
+    N.star[1,t+1] <- (sj + delta) * (f1 * N.star[1,t] + fa * N.star[2,t])
+    N.star[2,t+1] <- sa * (N.star[1,t] + N.star[2,t])
+    ann.growth.rate.star[t] <- (N.star[1,t+1] + N.star[2,t+1]) / (N.star[1,t] + N.star[2,t])
+  }
+  s.sj <- (ann.growth.rate.star[T] - ann.growth.rate[T]) / delta
+  e.sj <- s.sj * sj / lambda
+
+  # Calculation of net reproductive rate (R0)
+  for (i in 1:100){
+    u[i] <- pow(sa, i)
+  }
+  R0 <- sj * f1 + sj * fa * sum(u[])
+
+  # Calculation of generation time (GT)
+  GT <- log(R0) / log(lambda)
+}

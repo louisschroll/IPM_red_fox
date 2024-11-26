@@ -48,7 +48,7 @@ model {
 ")
 
 # Initial values
-Ninit <- matrix(10, nrow=2, ncol=T+1)
+Ninit <- matrix(10, nrow = 2, ncol = T+1)
 Ninit[,1] <- NA
 inits <- function(){list(N=Ninit)}
 
@@ -87,7 +87,7 @@ for (s in 1:dimensions[1]){
     # Calculate annual growth rate on log scale
     if (out6$sims.list$extinct[s,t] == 1) break
     r.annual[t,s] <- log(out6$sims.list$N[s,1,t+1] + out6$sims.list$N[s,2,t+1]) -
-    log(out6$sims.list$N[s,1,t] + out6$sims.list$N[s,2,t])
+      log(out6$sims.list$N[s,1,t] + out6$sims.list$N[s,2,t])
   } #t
   r[s] <- mean(r.annual[which(out6$sims.list$extinct[s,] == 0),s])
   lambda[s] <- exp(r[s])
