@@ -60,9 +60,9 @@ nsim=100
 ##### distance category info
 nG<-length(db)-1
 maxd<-dmax
-delta=100
-xg<-c(50, 150, 250)
-pix<-(2*xg*delta )/(maxd*maxd) 
+delta = 100
+xg <- c(50, 150, 250)
+pix <-(2 * xg * delta)/(maxd * maxd) 
 
 #we need this because otherwise JAGS cannot build a sampler, recommended by M. Plummer
 set.factory("bugs::Conjugate", FALSE, type="sampler")
@@ -76,7 +76,7 @@ print(i)
 ### dsim.fun at the end of this script #####
 dat<-dsim.fun(dmax=300, lamnew=lamnew, sigma=sigma, surv=surv, rec=rec, npoints=npoints)
 
-y<-sapply(dat$detList, rowSums)
+y <- sapply(dat$detList, rowSums)
 
 ### get one long vector with detections, distance category and site across all years
 dclass<-site<-NULL

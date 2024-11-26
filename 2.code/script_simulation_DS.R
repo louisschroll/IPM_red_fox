@@ -20,7 +20,7 @@ path_to_Rfunc <- "2.code/R_func"
 sapply(paste0(path_to_Rfunc, "/", list.files(path_to_Rfunc)), source)
 
 Tmax <- 10
-
+n_years <- Tmax + 1
 N <- sim_pop_dyn(Tmax = Tmax)
 
 N %>%
@@ -41,17 +41,14 @@ t(N) %>% as_tibble() %>%
   geom_line() +
   theme_minimal()
 
-DS_data <- data.frame()
-for (year in 1:(Tmax + 1)){
-  DS_data <- rbind(DS_data, 
-                   cbind(year, sim_DS_data(Ntot = sum(N[, year]), nsites = 50)$data))
-}
-
-
+DS_data <- sim_DS_data(Ntot = colSums(N), nsites = 50, transect_len = 6)
 N_estimates <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
 
 for (i in 1:(Tmax + 1)){
-  out1 <- run_DS_model(DS_data %>% filter(year == i) %>% select(-year), nsites = 50)
+  out1 <- run_DS_model(DS_data %>% filter(year == i) %>% select(-year), 
+                       nsites = 50, 
+                       transect_len = 6,
+                       nz = 600)
   N_estimates <- c(N_estimates, out1$mean$N_gic)
   N_estimates2 <- c(N_estimates2, out1$mean$N_gic2)
   N_estimates_upper <- c(N_estimates_upper, out1$q2.5$N_gic)
@@ -62,7 +59,6 @@ t(N) %>% as_tibble() %>%
   mutate(year = 1:nrow(.),
          Ntot = rowSums(.),
          N_estimates = N_estimates,
-         N_estimates2 = N_estimates2,
          N_estimates_upper = N_estimates_upper,
          N_estimates_lower = N_estimates_lower) %>% 
   pivot_longer(-c(year, N_estimates_upper, N_estimates_lower),

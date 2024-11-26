@@ -11,7 +11,7 @@ run_dynamic_DS_model <- function(DS_data,
   npseudo_ind <- nz * nyears
   # Data augmentation: add "pseudo-individuals"
   nind <- nrow(DS_data)
-  y <- c(DS_data$y, rep(0, npseudo_ind))     # Augmented detection indicator y
+  y <- c(DS_data$y, rep(0, npseudo_ind))        # Augmented detection indicator y
   site <- c(DS_data$site, rep(NA, npseudo_ind)) # Augmented site indicator,
   # unknown (i.e., NA) for augmented inds.
   d <- c(DS_data$d, rep(NA, npseudo_ind))    # Augmented distance data (with NAs)

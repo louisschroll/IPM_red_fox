@@ -37,27 +37,8 @@ run_harvest_model <- function(C){
   
   # Write model in jags
   cat("model{
-      ################################
-      #### PRIORS AND CONSTRAINTS ####
-      ################################
-      
-      #h ~ dunif(0, 1)
-      for(t in 1:Tmax) {
-      lambda[1, t] ~ dgamma(10, 0.1)
-      lambda[2, t] ~ dgamma(5, 0.1)
-      lambda[3, t] ~ dgamma(2, 0.1)
-      lambda[4, t] ~ dgamma(2, 0.1)
-      lambda[5, t] ~ dgamma(2, 0.1)
-        for(a in 1:age_max){
-           
-          N[a, t] ~ dpois(lambda[a, t])
-          # h[a, t] ~ dunif(0, 1)
-        }
-      }
-      
-  
       ######################################
-      #### AGE-AT-HARVEST MODULE ####
+      ### Module for age-at-harvest data ###
       ######################################
       
       ### Parameters:
@@ -66,6 +47,16 @@ run_harvest_model <- function(C){
       
       ### Data:
       # C = age-at-harvest matrix
+      
+      # Priors
+      # h ~ dunif(0, 1)
+      for(t in 1:Tmax) {
+        for(a in 1:age_max){
+          lambda[a, t] ~ dgamma(3, 0.1)
+          N[a, t] ~ dpois(lambda[a, t])
+          # h[a, t] ~ dunif(0, 1)
+        }
+      }
 
       ### Likelihood
       

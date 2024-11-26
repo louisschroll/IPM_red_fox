@@ -21,15 +21,15 @@ run_DS_model <- function(DS_data,
                          size_study_area = 250,
                          nsites = 50,
                          nz = 200){
-  data <- DS_data
+  data <- DS_data 
   B <- dist_max
 
   # Data augmentation: add "pseudo-individuals"
   nind <- nrow(data)
-  y <- c(data[, 2], rep(0, nz))     # Augmented detection indicator y
-  site <- c(data[, 1], rep(NA, nz)) # Augmented site indicator,
+  y <- c(DS_data$N_obs, rep(0, nz))     # Augmented detection indicator y
+  site <- c(DS_data$site, rep(NA, nz)) # Augmented site indicator,
   # unknown (i.e., NA) for augmented inds.
-  d <- c(data[, 5], rep(NA, nz))    # Augmented distance data (with NAs)
+  d <- c(DS_data$d, rep(NA, nz))    # Augmented distance data (with NAs)
   
   # Bundle and summarize data set
   win.data <- list(
@@ -90,11 +90,10 @@ model{
   
   
   # Inits
-  zst <- c(rep(1, sum(y)), rep(0, nz)) # Initial values for DA variables
   inits <- function() {
     list(beta0 = 0,
          alpha0 = 0,
-         z = zst)
+         z = y)
   }
   
   # Parameters to save
