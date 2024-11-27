@@ -102,17 +102,14 @@ writeIDSMCode <- function(survVarT) {
       ## Line transect observation distances (likelihood using nimbleDistance::dHN)
       # N_obs[x] = number of observations in detection distance data in area x
       # d[x, i] = i'th entry in detection distance data for area x
-      for (i in 1:N_obs[x]) {
+      for (i in 1:n_obs_dist[x]) {
         d[x, i] ~ dHN(sigma = sigma[x, Year_obs[x, i]],
                       Xmax = W,
                       point = 0)
       }
     } # x
     
-    ################################
-    # PARAMETER MODELS/CONSTRAINTS #
-    ################################
-    
+    # PARAMETER MODELS/CONSTRAINTS
     for (x in 1:n_areas) {
       ## Distance sampling detection parameters
       
@@ -238,11 +235,6 @@ writeIDSMCode <- function(survVarT) {
       }
     }
     
-    #------------------#
-    # Other parameters #
-    #------------------#
-    pi <- 3.141593
-    
     ##################################
     # Module for age-at-harvest data #
     ##################################
@@ -255,24 +247,22 @@ writeIDSMCode <- function(survVarT) {
     # C = age-at-harvest matrix
     
     ## Priors
-    h ~ dunif(0, 1)
+    harvest_rate ~ dunif(0, 1)
     # for(t in 1:Tmax) {
     #   for(a in 1:age_max){
-    #     h[a, t] ~ dunif(0, 1)
+    #     harvest_rate[a, t] ~ dunif(0, 1)
     #   }
     # }
     
     ## Likelihood
     for (x in 1:n_areas) {
-      for(t in 1:Tmax){
+      for(t in 1:n_years){
         for(a in 1:age_max){
-          N_area[x, a, t] <- meanDens[x, a, t] * size_area[x]
-          C[x, a, t] ~ dbin(h, N_area[x, a, t]) #h[a, t]
+          N_area[x, a, t] <- meanDens[x, a, t] * size_hunting_area[x]
+          C[x, a, t] ~ dbin(harvest_rate, N_area[x, a, t]) #h[a, t]
         }
       }
     }
-
   })
-  
   return(IDSM.code)
 }
