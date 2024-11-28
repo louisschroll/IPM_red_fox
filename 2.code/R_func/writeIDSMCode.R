@@ -181,8 +181,7 @@ writeIDSMCode <- function(survVarT) {
     
     # Survival
     h.sigma.S ~ dunif(0, 5)
-    Mu.S1 ~ dunif(0, 1)
-    
+
     if (survVarT) {
       sigmaT.S ~ dunif(0, 5)
       sigmaR.S ~ dunif(0, 5)

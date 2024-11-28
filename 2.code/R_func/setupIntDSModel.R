@@ -22,17 +22,17 @@
 #' @return list of list containing all components necessary for running model
 #' with `nimble::nimbleMCMC()`
 
-setupISDM <- function(nim.data,
-                       nim.constants,
-                       R_perF,
-                       survVarT,
-                       niter = 200000,
-                       nthin = 30,
-                       nburn = 111000,
-                       nchains = 3,
-                       testRun = FALSE,
-                       initVals.seed) {
-
+setupIntDSModel <- function(nim.data,
+                      nim.constants,
+                      R_perF,
+                      survVarT,
+                      niter = 200000,
+                      nthin = 30,
+                      nburn = 111000,
+                      nchains = 3,
+                      testRun = FALSE,
+                      initVals.seed) {
+  
   ## Set parameters to monitor
   params <- c("esw", "p", "R_year", "Mu.R", "h.Mu.R", "h.sigma.R", "sigmaT.R",
               "sigmaR.R", "sigma", "mu.dd", "h.mu.dd", "h.sigma.dd", "sigmaT.dd",
@@ -43,14 +43,14 @@ setupISDM <- function(nim.data,
   #set.seed(initVals.seed)
   initVals <- list()
   for (c in 1:nchains) {
-      initVals[[c]] <- simulateInits(
-        nim.data = nim.data,
-        nim.constants = nim.constants,
-        R_perF = R_perF,
-        survVarT = survVarT,
-        initVals.seed = initVals.seed[c]
-      )
-    }
+    initVals[[c]] <- simulateInits(
+      nim.data = nim.data,
+      nim.constants = nim.constants,
+      R_perF = R_perF,
+      survVarT = survVarT,
+      initVals.seed = initVals.seed[c]
+    )
+  }
   
   ## Adjust MCMC parameters if doing a test run
   if (testRun) {
