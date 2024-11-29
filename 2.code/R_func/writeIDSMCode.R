@@ -5,8 +5,6 @@
 #' @param survVarT logical. If TRUE, writes code for a model including random
 #' year variation in survival probability. If FALSE, assumed constant survival
 #' probability across time.
-#' @param telemetryData logical. If TRUE, uses information from telemetry data
-#' from Lierne. If FALSE, only line transect data is used.
 #' @return an R call object specifying the model structure for integrated
 #' distance sampling model.
 #' @export
@@ -115,7 +113,7 @@ writeIDSMCode <- function(survVarT) {
       
       for (t in 1:n_years) {
         # Detection decay
-        log(sigma[x, t]) <- log.mean.sigma.area[x] + epsT.dd[t] + epsR.dd[x, t]
+        log(sigma[x, t]) <- log.mean.sigma.area[x] + epsT.det[t] + epsR.det[x, t]
         sigma2[x, t] <- sigma[x, t] * sigma[x, t]
         
         # Effective strip width
@@ -126,7 +124,7 @@ writeIDSMCode <- function(survVarT) {
       }
       
       ## Annual recruitment rates
-      R_year[x, 1:n_years] <- exp(log(Mu.R[x]) + epsT.R[1:n_years] + epsR.R[x, 1:n_years])
+      R_year[x, 1:n_years] <- exp(log(mean.recr.area[x]) + epsT.R[1:n_years] + epsR.R[x, 1:n_years])
       
       ## Annual survival probabilities
       logit(Mu.S[x]) <- mu.S[x]
@@ -146,8 +144,8 @@ writeIDSMCode <- function(survVarT) {
     # Intercepts / averages #
     #-----------------------#
     
-    h.Mu.R  ~ dunif(0, 20) # Recruitment
-    h.Mu.S ~ dunif(0, 1) # Survival
+    mean.recruitment  ~ dunif(0, 20) # Recruitment
+    mean.survival ~ dunif(0, 1) # Survival
     log.mean.sigma ~ dunif(-10, 100) # Detection
     
     for (x in 1:n_areas) {
@@ -156,17 +154,16 @@ writeIDSMCode <- function(survVarT) {
       
       ## Recruitment
       epsA.R[x]  ~ dnorm(0, sd = h.sigma.R)
-      log(Mu.R[x]) <- log(h.Mu.R) + epsA.R[x]
+      log(mean.recr.area[x]) <- log(mean.recruitment) + epsA.R[x]
       
       ## Survival
       epsA.S[x]  ~ dnorm(0, sd = h.sigma.S)
-      mu.S[x] <- logit(h.Mu.S) + epsA.S[x]
+      mu.S[x] <- logit(mean.survival) + epsA.S[x]
       
       ## Detection
-      epsA.dd[x] ~ dnorm(0, sd = h.sigma.dd)
-      log.mean.sigma.area[x] <- log.mean.sigma + epsA.dd[x]
+      eps.det.area[x] ~ dnorm(0, sd = sd.det.area)
+      log.mean.sigma.area[x] <- log.mean.sigma + eps.det.area[x]
     }
-    
     
     #----------------#
     # Random effects #
@@ -189,9 +186,9 @@ writeIDSMCode <- function(survVarT) {
     }
     
     # Detection
-    h.sigma.dd ~ dunif(0, 5)
-    sigmaT.dd ~ dunif(0, 20)
-    sigmaR.dd ~ dunif(0, 20)
+    sd.det.area ~ dunif(0, 5)
+    sd.det.year ~ dunif(0, 20)
+    sd.det.residual ~ dunif(0, 20)
     
     # Initial density
     for (x in 1:n_areas) {
@@ -202,7 +199,7 @@ writeIDSMCode <- function(survVarT) {
     # Shared year variation
     for (t in 1:n_years) {
       epsT.R[t] ~ dnorm(0, sd = sigmaT.R) # Recruitment
-      epsT.dd[t] ~ dnorm(0, sd = sigmaT.dd) # Detection
+      epsT.det[t] ~ dnorm(0, sd = sd.det.year) # Detection
     }
     
     for (t in 1:(n_years - 1)) {
@@ -215,7 +212,7 @@ writeIDSMCode <- function(survVarT) {
     for (x in 1:n_areas) {
       for (t in 1:n_years) {
         epsR.R[x, t] ~ dnorm(0, sd = sigmaR.R)
-        epsR.dd[x, t] ~ dnorm(0, sd = sigmaR.dd)
+        epsR.det[x, t] ~ dnorm(0, sd = sd.det.residual)
       }
     }
     

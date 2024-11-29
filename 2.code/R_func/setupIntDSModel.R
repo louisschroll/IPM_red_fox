@@ -8,7 +8,7 @@
 #' If FALSE, treats recruitment rate as juvenile per adult (sum of both sexes).
 #' @param survVarT logical. If TRUE, survival is simulated including annual variation.
 #' @param fitRodentCov logical. If TRUE, rodent covariate on reproduction is included.
-#' @param addDummyDim logical. If TRUE (default) adds a dummy "area" dimension when
+#' @param adetDummyDim logical. If TRUE (default) adets a dummy "area" dimension when
 #' simulating initial values for a single area implementation. This is necessary
 #' for the multi-area setup/model to run with data from only one area.
 #' @param niter integer. Number of MCMC iterations (default = 25000)
@@ -34,10 +34,10 @@ setupIntDSModel <- function(nim.data,
                       initVals.seed) {
   
   ## Set parameters to monitor
-  params <- c("esw", "p", "R_year", "Mu.R", "h.Mu.R", "h.sigma.R", "sigmaT.R",
-              "sigmaR.R", "sigma", "mu.dd", "h.mu.dd", "h.sigma.dd", "sigmaT.dd",
-              "sigmaR.dd", "meanDens", "Mu.D1", "sigma.D", "S", "Mu.S", "h.Mu.S",
-              "h.sigma.S", "Mu.S1")
+  params <- c("esw", "p", "R_year", "Mu.R", "mean.recruitment", "h.sigma.R", "sigmaT.R",
+              "sigmaR.R", "sigma", "mu.det", "h.mu.det", "sd.det.area", "sd.det.year",
+              "sd.det.residual", "meanDens", "Mu.D1", "sigma.D", "S", "Mu.S", "mean.survival",
+              "h.sigma.S")
   
   ## Simulate initial values
   #set.seed(initVals.seed)

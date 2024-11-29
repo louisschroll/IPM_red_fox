@@ -27,11 +27,11 @@ simulateInits <- function(nim.data,
   
   # Vital rates
   ## Area-specific survival parameters
-  h.Mu.S <- runif(1, 0.40, 0.45)
+  mean.survival <- runif(1, 0.40, 0.45)
   h.sigma.S <- runif(1, 0.05, 0.2)
 
   mu.S <- rnorm(n_areas,
-                qlogis(h.Mu.S),
+                qlogis(mean.survival),
                 sd = h.sigma.S)
   
   sigmaT.S <- runif(1, 0.05, 0.2)
@@ -78,23 +78,23 @@ simulateInits <- function(nim.data,
   
   ## Area-specific detection parameters
   log.mean.sigma <- runif(1, 3.5, 5.5)
-  h.sigma.dd <- runif(1, 0.05, 0.2)
+  sd.det.area <- runif(1, 0.05, 0.2)
   
-  #log.mean.sigma.area <- rnorm(n_areas, log.mean.sigma, sd = h.sigma.dd)
+  #log.mean.sigma.area <- rnorm(n_areas, log.mean.sigma, sd = sd.det.area)
   log.mean.sigma.area <- rep(log.mean.sigma, n_areas)
   
-  sigmaT.dd <- runif(1, 0.05, 0.2)
-  sigmaR.dd <- runif(1, 0.05, 0.2)
+  sd.det.year <- runif(1, 0.05, 0.2)
+  sd.det.residual <- runif(1, 0.05, 0.2)
   
   sigma <- esw <- p <- matrix(NA, nrow = n_areas, ncol = n_years)
   
-  epsT.dd <- rep(0, n_years)
-  #epsT.dd <- rnorm(n_years, 0, sd = sigmaT.dd)
-  epsR.dd <- matrix(0, nrow = n_areas, ncol = n_years)
-  #epsR.dd <- matrix(rnorm(n_areas*n_years, 0, sigmaR.dd), nrow = n_areas, ncol = n_years)
+  epsT.det <- rep(0, n_years)
+  #epsT.det <- rnorm(n_years, 0, sd = sd.det.year)
+  epsR.det <- matrix(0, nrow = n_areas, ncol = n_years)
+  #epsR.det <- matrix(rnorm(n_areas*n_years, 0, sd.det.residual), nrow = n_areas, ncol = n_years)
   
   for (x in 1:n_areas) {
-    sigma[x, 1:n_years] <- exp(log.mean.sigma.area[x] + epsT.dd[1:n_years] + epsR.dd[x, 1:n_years])
+    sigma[x, 1:n_years] <- exp(log.mean.sigma.area[x] + epsT.det[1:n_years] + epsR.det[x, 1:n_years])
     esw[x, 1:n_years] <- sqrt(pi * sigma[x, 1:n_years] ^ 2 / 2)
     p[x, 1:n_years] <- min(esw[x, 1:n_years], W) / W
   }
@@ -187,18 +187,18 @@ simulateInits <- function(nim.data,
     
     log.mean.sigma.area = log.mean.sigma.area,
     log.mean.sigma = log.mean.sigma,
-    h.sigma.dd = h.sigma.dd,
-    sigmaT.dd = sigmaT.dd,
-    sigmaR.dd = sigmaR.dd,
-    epsT.dd = epsT.dd,
-    epsR.dd = epsR.dd,
-    epsA.dd = log.mean.sigma.area - log.mean.sigma,
+    sd.det.area = sd.det.area,
+    sd.det.year = sd.det.year,
+    sd.det.residual = sd.det.residual,
+    epsT.det = epsT.det,
+    epsR.det = epsR.det,
+    eps.det.area = log.mean.sigma.area - log.mean.sigma,
     sigma = sigma,
     sigma2 = sigma ^ 2,
     esw = esw,
     p = p,
     
-    h.Mu.S = h.Mu.S,
+    mean.survival = mean.survival,
     h.sigma.S = h.sigma.S,
     mu.S = mu.S,
     Mu.S = Mu.S,
@@ -206,7 +206,7 @@ simulateInits <- function(nim.data,
     sigmaR.S = sigmaR.S,
     epsT.S = epsT.S,
     epsR.S = epsR.S,
-    epsA.S = mu.S - logit(h.Mu.S),
+    epsA.S = mu.S - logit(mean.survival),
     S = S,
     
     Density = Density,
