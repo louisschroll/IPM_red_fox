@@ -3,11 +3,13 @@
 
 IDSM_runModel <- function(DS_data_list, 
                           harvest_data, 
-                          W, 
-                          size_hunting_area){
-  input_data <- IDSM_prepareInputData(DS_data_list = DS_data_list,
+                          dist_max, 
+                          size_hunting_area,
+                          testRun = FALSE,
+                          mySeed = 42){
+  input_data <- IDSM_prepareInputData(DS_data = DS_data,
                                       harvest_data = harvest_data,
-                                      W = W,
+                                      W = dist_max,
                                       size_hunting_area = size_hunting_area)
   
   IDSM_code <- IDSM_writeCode()
@@ -21,7 +23,7 @@ IDSM_runModel <- function(DS_data_list,
                                  testRun = TRUE,
                                  initVals.seed = mySeed)
   
-  IDSM_out <- nimbleMCMC(code = model_setup$modelCode,
+  IDSM_out <- nimbleMCMC(code = IDSM_code,
                          data = input_data$nim.data, 
                          constants = input_data$nim.constants,
                          inits = model_setup$initVals, 

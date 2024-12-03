@@ -19,31 +19,24 @@
 
 IDSM_setupModel <- function(nim.data,
                             nim.constants,
-                            R_perF,
-                            survVarT,
-                            niter = 200000,
-                            nthin = 30,
-                            nburn = 111000,
+                            niter = 20000,
+                            nthin = 3,
+                            nburn = 1000,
                             nchains = 3,
                             testRun = FALSE,
                             initVals.seed) {
   
   ## Set parameters to monitor
-  params <- c("esw", "p", "R_year", "Mu.R", "mean.recruitment", "h.sigma.R", "sigmaT.R",
-              "sigmaR.R", "sigma", "mu.det", "h.mu.det", "sd.det.area", "sd.det.year",
-              "sd.det.residual", "meanDens", "Mu.D1", "sigma.D", "S", "Mu.S", "mean.survival",
-              "h.sigma.S")
+  params <- c("esw", "p", "mean.recruitment", "N_tot_gic", 
+              "sigma", "meanDens", "mean.survival")
   
   ## Simulate initial values
   #set.seed(initVals.seed)
   initVals <- list()
   for (c in 1:nchains) {
-    initVals[[c]] <- simulateInits(
+    initVals[[c]] <- IDSM_simulateInits(
       nim.data = nim.data,
-      nim.constants = nim.constants,
-      R_perF = R_perF,
-      survVarT = survVarT,
-      initVals.seed = initVals.seed[c]
+      nim.constants = nim.constants
     )
   }
   

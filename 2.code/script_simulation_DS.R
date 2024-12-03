@@ -17,6 +17,9 @@ rm(list = ls())          # remove all variables of the work space
 library(tidyverse)
 library(jagsUI)
 
+library(nimble)
+library(nimbleDistance)
+
 # Load functions
 path_to_Rfunc <- "2.code/R_func"
 sapply(paste0(path_to_Rfunc, "/", list.files(path_to_Rfunc)), source)
@@ -29,7 +32,7 @@ N0 <- 200
 
 n_sites <- 50
 transect_len <- 6
-size_study_area <- 250
+size_hunting_area <- 250
 dist_max <- 0.6
 mean.sigma <- 0.15
 # Simulate population dynamic
@@ -66,7 +69,7 @@ DS_data <- sim_DS_data(Ntot = colSums(N),
 
 # Simulate age-at-harvest matrix
 harvest_rate <- 0.2
-C <- sim_age_data(N, harvest_rate = harvest_rate)
+harvest_data <- sim_age_data(N, harvest_rate = harvest_rate)
 
 ## Analysis of DS data independently for each year -----------------------------
 N_estimates <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
