@@ -39,11 +39,11 @@ IDSM_writeCode <- function() {
       
       # Age classes 1 to 4 (indeces = 2, 3, 4, 5)
       for(a in 2:n_age_class){
-        Density[a, j, 1] ~ dunif(0, 10)
+        Density[a, j, 1] ~ dunif(0, 2)
       }		
       
       ## Adult and juvenile numbers
-      N_exp[1:n_age_class, j, 1] <- Density[1:n_age_class, 1] * L[j, 1] * W * 2
+      N_exp[1:n_age_class, j, 1] <- Density[1:n_age_class, j, 1] * L[j, 1] * W * 2
     }
     
     #-------------------------------#
@@ -80,9 +80,13 @@ IDSM_writeCode <- function() {
     for (a in 1:n_age_class) {
       for (t in 1:n_years) {
         meanDens[a, t] <- mean(Density[a, 1:n_sites, t])
-        N_tot_gic[a, t] <- meanDens[a, t] * size_hunting_area
+        N_tot_gic_age[a, t] <- round(meanDens[a, t] * size_hunting_area)
       } # t
     } # a
+    
+    for(t in 1:n_years){
+      N_tot_gic[t] <- sum(N_tot_gic_age[1:n_age_class, t])
+    }
     
     ############################
     # Distance sampling module #
@@ -92,7 +96,7 @@ IDSM_writeCode <- function() {
     # DS_count[j, t] = number of individuals detected in site j in year t
     for (j in 1:n_sites) {
       for (t in 1:n_years) {
-        DS_count[j, t] ~ dpois(p[t] * sum(N_exp[1:age_maj, t]))
+        DS_count[j, t] ~ dpois(p * sum(N_exp[1:n_age_class, j, t]))
       }
     }
     
@@ -100,7 +104,7 @@ IDSM_writeCode <- function() {
     # N_obs = number of observations in detection distance data in area x
     # d[i] = i'th entry in detection distance data for area x
     for (i in 1:n_obs_dist) {
-      d[i] ~ dHN(sigma = sigma[year_obs[i]],
+      d[i] ~ dHN(sigma = sigma, # sigma[year_obs[i]],
                  Xmax = W,
                  point = 0)
     }
@@ -128,8 +132,8 @@ IDSM_writeCode <- function() {
     # PRIORS  #
     ###########
     mean.recruitment  ~ dunif(0, 20) # Recruitment
-    mean.survival ~ dunif(0, 1)      # Survival
-    log.mean.sigma ~ dunif(-10, 100) # Detection
+    mean.survival <- 0.56 # ~ dunif(0, 1)      # Survival
+    log.mean.sigma ~ dunif(-10, 1) # Detection
     
     ##################################
     # Module for age-at-harvest data #
@@ -144,12 +148,12 @@ IDSM_writeCode <- function() {
     
     ## Priors
     harvest_rate ~ dunif(0, 1)
-    
+
     ## Likelihood
-    
+
     for(t in 1:n_years){
       for(a in 1:n_age_class){
-        C[a, t] ~ dbin(harvest_rate, N_tot_gic[a, t]) 
+        C[a, t] ~ dbin(harvest_rate, N_tot_gic_age[a, t])
       }
     }
   })

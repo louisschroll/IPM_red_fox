@@ -28,7 +28,8 @@ IDSM_setupModel <- function(nim.data,
   
   ## Set parameters to monitor
   params <- c("esw", "p", "mean.recruitment", "N_tot_gic", 
-              "sigma", "meanDens", "mean.survival")
+              "sigma", "meanDens", "mean.survival",
+              "harvest_rate", "N_tot_gic_age", "N_tot_exp")
   
   ## Simulate initial values
   #set.seed(initVals.seed)

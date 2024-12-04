@@ -31,7 +31,7 @@ n_age_class <- 5
 N0 <- 200
 
 n_sites <- 50
-transect_len <- 6
+transect_len <- 2
 size_hunting_area <- 250
 dist_max <- 0.6
 mean.sigma <- 0.15
@@ -65,7 +65,7 @@ DS_data <- sim_DS_data(Ntot = colSums(N),
                        mean.sigma = mean.sigma,
                        dist_max = dist_max,
                        transect_len = transect_len,
-                       size_study_area = size_study_area)
+                       size_study_area = size_hunting_area)
 
 # Simulate age-at-harvest matrix
 harvest_rate <- 0.2
@@ -107,12 +107,45 @@ tibble(year = 1:ncol(N),
 
 simData_list <- list(DS_data1 = DS_data, DS_data2 = DS_data %>% filter(site < 41))
 
-ISDM_out <- runIntDSModel(DS_data_list = simData_list, 
-                          harvest_data = C, 
-                          W = dist_max, 
-                          size_hunting_area = size_study_area)
+IDSM_out <- IDSM_runModel(DS_data = DS_data, 
+                          harvest_data = harvest_data, 
+                          dist_max = dist_max, 
+                          size_hunting_area = size_hunting_area)
+
+MCMCvis::MCMCtrace(IDSM_out)
+
+IDSM_tibble <- map(IDSM_out, . %>% 
+  as_tibble()) %>% 
+  bind_rows() 
+
+IDSM_tibble$harvest_rate %>% mean()
+MCMCvis::MCMCsummary(object = IDSM_out, round = 2)
+
+N_estimate <- IDSM_tibble %>% 
+  select(starts_with("N_tot_gic[")) %>% 
+  janitor::clean_names() %>%
+  pivot_longer(everything(), names_to = "year") %>% 
+  mutate(year = as.numeric(str_extract(year, "\\d+"))) %>% 
+  group_by(year) %>% 
+  summarise(mean = mean(value),
+            median = median(value),
+            q2.5 = quantile(value, probs = 0.025),
+            q97.5 = quantile(value, probs = 0.975))
 
 
+N_estimate %>% 
+  bind_rows(tibble(mean = c(colSums(N)),
+                   year = 1:n_years),
+            tibble(mean = c(colSums(harvest_data)),
+                   year = 1:n_years),
+            .id = "real_estim") %>% 
+  ggplot(aes(x = year, y = mean, group = as.factor(real_estim), colour = as.factor(real_estim))) +
+  geom_line() +
+  geom_ribbon(aes(ymin = c(q2.5), 
+                  ymax = c(q97.5)), 
+              linetype=2, alpha=0.1) +
+  theme_minimal() +
+  coord_cartesian(ylim = c(0, 700))
 
 
 

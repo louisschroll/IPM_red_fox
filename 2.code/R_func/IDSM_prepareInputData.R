@@ -48,7 +48,7 @@ IDSM_prepareInputData <- function(DS_data,
       n_years = n_years,
       n_obs_dist = length(d),
       n_age_class = nrow(harvest_data),
-      year_obs = year_obs,
+      #year_obs = year_obs,
       W = W,
       size_hunting_area = size_hunting_area,
       pi = 3.141593
