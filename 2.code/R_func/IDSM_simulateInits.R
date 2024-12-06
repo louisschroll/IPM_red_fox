@@ -82,7 +82,7 @@ IDSM_simulateInits <- function(nim.data,
     for (t in 1:n_years) {
       meanDens[a, t] <- mean(Density[a, 1:n_sites, t])
       N_tot_gic_age[a, t] <- max(round(meanDens[a, t] * size_hunting_area), 
-                             input_data$nim.data$C[a, t] * 2)
+                             nim.data$C[a, t] * 2)
     }
   }
   N_tot_gic = colSums(N_tot_gic_age)

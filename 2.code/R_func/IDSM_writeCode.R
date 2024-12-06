@@ -38,9 +38,12 @@ IDSM_writeCode <- function() {
       Density[1, j, 1] <- sum(Density[2:n_age_class, j, 1]) / 2 * mean.recruitment #R_year[1]
       
       # Age classes 1 to 4 (indeces = 2, 3, 4, 5)
-      for(a in 2:n_age_class){
-        Density[a, j, 1] ~ dunif(0, 2)
-      }		
+      #for(a in 2:n_age_class){
+      Density[2, j, 1] <- 0.160 #~ dunif(0, 1)
+      Density[3, j, 1] <- 0.104 #~ dunif(0, 1)
+      Density[4, j, 1] <- 0.080 #~ dunif(0, 1)
+      Density[5, j, 1] <- 0.056 #~ dunif(0, 1)
+      #}		
       
       ## Adult and juvenile numbers
       N_exp[1:n_age_class, j, 1] <- Density[1:n_age_class, j, 1] * L[j, 1] * W * 2

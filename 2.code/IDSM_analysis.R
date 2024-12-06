@@ -15,9 +15,9 @@ rm(list = ls())          # remove all variables of the work space
 
 # Load packages
 library(tidyverse)
-library(jagsUI)
 
 library(nimble)
+# remotes::install_github("scrogster/nimbleDistance")
 library(nimbleDistance)
 
 # Load functions
@@ -71,41 +71,7 @@ DS_data <- sim_DS_data(Ntot = colSums(N),
 harvest_rate <- 0.2
 harvest_data <- sim_age_data(N, harvest_rate = harvest_rate)
 
-# Analysis of DS data independently for each year -----------------------------
-# N_estimates <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
-# 
-# for (i in 1:n_years){
-#   out1 <- run_DS_model(DS_data %>% filter(year == i) %>% select(-year),
-#                        nsites = n_sites,
-#                        transect_len = transect_len,
-#                        nz = 600)
-#   N_estimates <- c(N_estimates, out1$mean$N_gic)
-#   N_estimates2 <- c(N_estimates2, out1$mean$N_gic2)
-#   N_estimates_upper <- c(N_estimates_upper, out1$q2.5$N_gic)
-#   N_estimates_lower <- c(N_estimates_lower, out1$q97.5$N_gic)
-# }
-# 
-# tibble(year = 1:ncol(N),
-#        N_real = colSums(N),
-#        N_estimates = N_estimates,
-#        N_estimates_upper = N_estimates_upper,
-#        N_estimates_lower = N_estimates_lower) %>%
-#   pivot_longer(-c(year, N_estimates_upper, N_estimates_lower),
-#                names_to = "Pop_size") %>%
-#   mutate(N_estimates_upper = ifelse(Pop_size == "N_estimates", N_estimates_upper, NA),
-#          N_estimates_lower = ifelse(Pop_size == "N_estimates", N_estimates_lower, NA)) %>%
-#   ggplot(aes(x = year, y = value, group = as.factor(Pop_size), colour = as.factor(Pop_size))) +
-#   geom_line() +
-#   geom_ribbon(aes(ymin = c(N_estimates_lower),
-#                   ymax = c(N_estimates_upper)),
-#               linetype=2, alpha=0.1) +
-#   theme_minimal() +
-#   coord_cartesian(ylim = c(0, 400))
-
-
-# ------
-
-simData_list <- list(DS_data1 = DS_data, DS_data2 = DS_data %>% filter(site < 41))
+# Analysis  -----------------------------
 
 IDSM_out <- IDSM_runModel(DS_data = DS_data, 
                           harvest_data = harvest_data, 
@@ -115,7 +81,7 @@ IDSM_out <- IDSM_runModel(DS_data = DS_data,
 MCMCvis::MCMCtrace(IDSM_out)
 
 IDSM_tibble <- map(IDSM_out, . %>% 
-  as_tibble()) %>% 
+                     as_tibble()) %>% 
   bind_rows() 
 
 IDSM_tibble$harvest_rate %>% mean()
@@ -163,7 +129,7 @@ D_matrix <- IDSM_tibble %>%
   group_by(year, age_class) %>% 
   summarise(mean = mean(value)) %>% 
   pivot_wider(names_from = year, values_from = mean)
-  
+
 
 diff <- D_matrix %>% select(-age_class) %>% as.matrix() / (N / 250)
 
