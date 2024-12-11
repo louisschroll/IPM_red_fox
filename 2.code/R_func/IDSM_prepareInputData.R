@@ -33,6 +33,27 @@ IDSM_prepareInputData <- function(DS_data,
   year_obs <- DS_data %>%
     filter(!is.na(d)) %>%
     pull(year)
+  
+  # Prior for initial density
+  N0 <- 150
+  R <- 1.6
+  S <- 0.56
+  M <- matrix(c(0, R, R, R, R,
+                S, 0, 0, 0, 0,
+                0, S, 0, 0, 0,
+                0, 0, S, 0, 0,
+                0, 0, 0, S, S), ncol = n_age_class) %>% t()
+  
+  eignevalue <- eigs(M, "ss")
+  stable_stage_prop <- eignevalue / sum(eignevalue)
+  intit_density <- round(N0 * stable_stage_prop) / size_hunting_area
+  mu <- intit_density
+  sigma <- 0.2
+  
+  a <- ((1 - mu) / (sigma * sigma) - (1 / mu)) * mu ^ 2
+  b <- a * ( (1/mu) - 1)
+  
+  beta_param <- matrix(c(a, b), ncol = 2)
 
   ## Reformat data into lists for Nimble
   input_data <- list(
@@ -51,6 +72,7 @@ IDSM_prepareInputData <- function(DS_data,
       #year_obs = year_obs,
       W = W,
       size_hunting_area = size_hunting_area,
+      beta_param = beta_param,
       pi = 3.141593
     ))
 

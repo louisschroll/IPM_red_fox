@@ -26,8 +26,18 @@ sim_pop_dyn <- function(n_years = 10,
   # Define population matrix and initial stage-specific population sizes
   N <- matrix(NA, nrow = n_age_class, ncol = n_years)
   colnames(N) <- paste0("Y", 1:n_years)
-  N[1:n_age_class, 1] <- round(N0 * c(0.5, 0.2, 0.13, 0.1, 0.07))
+  R <- mean.fa
+  S <- mean.sa
+  M <- matrix(c(0, R, R, R, R,
+                S, 0, 0, 0, 0,
+                0, S, 0, 0, 0,
+                0, 0, S, 0, 0,
+                0, 0, 0, S, S), ncol = n_age_class) %>% t()
   
+  eignevalue <- eigs(M, "ss")
+  stable_stage_prop <- eignevalue / sum(eignevalue)
+  N[1:n_age_class, 1] <- round(N0 * stable_stage_prop)
+
   # Project population
   for (t in 1:(n_years - 1)) {
     

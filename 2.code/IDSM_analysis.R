@@ -106,14 +106,18 @@ N_estimate %>%
                    id = "N_real"),
             tibble(mean = c(colSums(harvest_data)),
                    year = 1:n_years,
-                   id = "harvested_N")) %>% 
+                   id = "harvested_N"),
+            tibble(mean = DS_data %>% group_by(year) %>% summarise(sum = sum(N_obs)) %>% pull(sum),
+                   year = 1:n_years,
+                   id = "counted_N"
+                   )) %>% 
   ggplot(aes(x = year, y = mean, group = as.factor(id), colour = as.factor(id))) +
   geom_line() +
   geom_ribbon(aes(ymin = c(q2.5), 
                   ymax = c(q97.5)), 
-              linetype=2, alpha=0.1) +
+              linetype = 2, alpha = 0.1) +
   theme_minimal() +
-  coord_cartesian(ylim = c(0, 700))
+  coord_cartesian(ylim = c(0, 400))
 
 
 D_matrix <- IDSM_tibble %>%
@@ -136,5 +140,6 @@ diff <- D_matrix %>% select(-age_class) %>% as.matrix() / (N / 250)
 heatmap(x = diff, Rowv = NA, Colv = NA, scale = "none", 
         xlab = "Columns", ylab = "Rows", main = "Heatmap")
 
+library(popdemo)
 
 
