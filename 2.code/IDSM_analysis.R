@@ -15,7 +15,7 @@ rm(list = ls())          # remove all variables of the work space
 
 # Load packages
 library(tidyverse)
-
+library(popdemo)
 library(nimble)
 # remotes::install_github("scrogster/nimbleDistance")
 library(nimbleDistance)
@@ -26,7 +26,7 @@ sapply(paste0(path_to_Rfunc, "/", list.files(path_to_Rfunc)), source)
 
 ## Simulation of the data ------------------------------------------------------
 # Set simulation parameters
-n_years <- 10
+n_years <- 50
 n_age_class <- 5
 N0 <- 200
 
@@ -73,12 +73,35 @@ harvest_data <- sim_age_data(N, harvest_rate = harvest_rate)
 
 # Analysis  -----------------------------
 
+# Prior for initial density
+N0 <- 300 # true value: 200
+R <- 1.6  # true value: 1.6
+S <- 0.56 # true value 0.56
+M <- matrix(c(0, R, R, R, R,
+              S, 0, 0, 0, 0,
+              0, S, 0, 0, 0,
+              0, 0, S, 0, 0,
+              0, 0, 0, S, S), ncol = n_age_class) %>% t()
+
+eignevalue <- eigs(M, "ss")
+stable_stage_prop <- eignevalue / sum(eignevalue)
+intit_density <- round(N0 * stable_stage_prop) / size_hunting_area
+mu <- intit_density
+sigma <- 0.1
+
+a <- ((1 - mu) / (sigma * sigma) - (1 / mu)) * mu ^ 2
+b <- a * ( (1/mu) - 1)
+
+beta_param <- matrix(c(a, b), ncol = 2)
+
+# Run model
 IDSM_out <- IDSM_runModel(DS_data = DS_data, 
                           harvest_data = harvest_data, 
                           dist_max = dist_max, 
-                          size_hunting_area = size_hunting_area)
+                          size_hunting_area = size_hunting_area,
+                          beta_param = beta_param)
 
-MCMCvis::MCMCtrace(IDSM_out)
+#MCMCvis::MCMCtrace(IDSM_out)
 
 IDSM_tibble <- map(IDSM_out, . %>% 
                      as_tibble()) %>% 
@@ -88,7 +111,7 @@ IDSM_tibble$harvest_rate %>% mean()
 MCMCvis::MCMCsummary(object = IDSM_out, round = 2)
 
 N_estimate <- IDSM_tibble %>% 
-  select(starts_with("N_tot_gic["), starts_with("N_tot_exp[")) %>% 
+  select(starts_with("N_tot_gic[")) %>% 
   janitor::clean_names() %>%
   pivot_longer(everything(), names_to = "id") %>% 
   mutate(year = as.numeric(str_extract(id, "\\d+")),
@@ -114,10 +137,11 @@ N_estimate %>%
   ggplot(aes(x = year, y = mean, group = as.factor(id), colour = as.factor(id))) +
   geom_line() +
   geom_ribbon(aes(ymin = c(q2.5), 
-                  ymax = c(q97.5)), 
+                  ymax = c(q97.5)),  
               linetype = 2, alpha = 0.1) +
   theme_minimal() +
-  coord_cartesian(ylim = c(0, 400))
+  coord_cartesian(ylim = c(0, 500)) +
+  labs(title = paste("N0 =", N0))
 
 
 D_matrix <- IDSM_tibble %>%
@@ -140,6 +164,5 @@ diff <- D_matrix %>% select(-age_class) %>% as.matrix() / (N / 250)
 heatmap(x = diff, Rowv = NA, Colv = NA, scale = "none", 
         xlab = "Columns", ylab = "Rows", main = "Heatmap")
 
-library(popdemo)
 
 

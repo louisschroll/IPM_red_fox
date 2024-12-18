@@ -5,12 +5,14 @@ IDSM_runModel <- function(DS_data,
                           harvest_data, 
                           dist_max, 
                           size_hunting_area,
+                          beta_param,
                           testRun = FALSE,
                           mySeed = 42){
   input_data <- IDSM_prepareInputData(DS_data = DS_data,
                                       harvest_data = harvest_data,
                                       W = dist_max,
-                                      size_hunting_area = size_hunting_area)
+                                      size_hunting_area = size_hunting_area,
+                                      beta_param = beta_param)
   
   IDSM_code <- IDSM_writeCode()
   

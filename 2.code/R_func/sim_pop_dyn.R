@@ -16,8 +16,8 @@ sim_pop_dyn <- function(n_years = 10,
                         N0 = 200,
                         n_age_class = 5) {
   # Define mean of the demographic parameters
-  mean.sj <- 0.56 # 0.37
-  mean.sa <- 0.56
+  mean.sj <- 0.54 # 0.37
+  mean.sa <- 0.54
   mean.f1 <- 0 #1.4
   mean.fa <- 1.6
   surv_rate <- c(mean.sj, rep(mean.sa, n_age_class-1))
