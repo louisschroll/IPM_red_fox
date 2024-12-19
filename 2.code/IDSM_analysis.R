@@ -26,7 +26,7 @@ sapply(paste0(path_to_Rfunc, "/", list.files(path_to_Rfunc)), source)
 
 ## Simulation of the data ------------------------------------------------------
 # Set simulation parameters
-n_years <- 50
+n_years <- 20
 n_age_class <- 5
 N0 <- 200
 
@@ -47,7 +47,8 @@ N %>%
   ggplot(aes(x = year, y = value)) +
   geom_line() +
   geom_point() +
-  theme_minimal()
+  theme_minimal() +
+  coord_cartesian(ylim = c(0, 300))
 
 t(N) %>% as_tibble() %>% 
   mutate(year = 1:nrow(.),
@@ -74,7 +75,7 @@ harvest_data <- sim_age_data(N, harvest_rate = harvest_rate)
 # Analysis  -----------------------------
 
 # Prior for initial density
-N0 <- 300 # true value: 200
+N0 <- 100 # true value: 200
 R <- 1.6  # true value: 1.6
 S <- 0.56 # true value 0.56
 M <- matrix(c(0, R, R, R, R,

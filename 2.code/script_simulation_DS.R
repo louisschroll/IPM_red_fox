@@ -72,35 +72,35 @@ harvest_rate <- 0.2
 harvest_data <- sim_age_data(N, harvest_rate = harvest_rate)
 
 # Analysis of DS data independently for each year -----------------------------
-# N_estimates <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
-# 
-# for (i in 1:n_years){
-#   out1 <- run_DS_model(DS_data %>% filter(year == i) %>% select(-year),
-#                        nsites = n_sites,
-#                        transect_len = transect_len,
-#                        nz = 600)
-#   N_estimates <- c(N_estimates, out1$mean$N_gic)
-#   N_estimates2 <- c(N_estimates2, out1$mean$N_gic2)
-#   N_estimates_upper <- c(N_estimates_upper, out1$q2.5$N_gic)
-#   N_estimates_lower <- c(N_estimates_lower, out1$q97.5$N_gic)
-# }
-# 
-# tibble(year = 1:ncol(N),
-#        N_real = colSums(N),
-#        N_estimates = N_estimates,
-#        N_estimates_upper = N_estimates_upper,
-#        N_estimates_lower = N_estimates_lower) %>%
-#   pivot_longer(-c(year, N_estimates_upper, N_estimates_lower),
-#                names_to = "Pop_size") %>%
-#   mutate(N_estimates_upper = ifelse(Pop_size == "N_estimates", N_estimates_upper, NA),
-#          N_estimates_lower = ifelse(Pop_size == "N_estimates", N_estimates_lower, NA)) %>%
-#   ggplot(aes(x = year, y = value, group = as.factor(Pop_size), colour = as.factor(Pop_size))) +
-#   geom_line() +
-#   geom_ribbon(aes(ymin = c(N_estimates_lower),
-#                   ymax = c(N_estimates_upper)),
-#               linetype=2, alpha=0.1) +
-#   theme_minimal() +
-#   coord_cartesian(ylim = c(0, 400))
+N_estimates <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
+
+for (i in 1:n_years){
+  out1 <- run_DS_model(DS_data %>% filter(year == i) %>% select(-year),
+                       nsites = n_sites,
+                       transect_len = transect_len,
+                       nz = 600)
+  N_estimates <- c(N_estimates, out1$mean$N_gic)
+  N_estimates2 <- c(N_estimates2, out1$mean$N_gic2)
+  N_estimates_upper <- c(N_estimates_upper, out1$q2.5$N_gic)
+  N_estimates_lower <- c(N_estimates_lower, out1$q97.5$N_gic)
+}
+
+tibble(year = 1:ncol(N),
+       N_real = colSums(N),
+       N_estimates = N_estimates,
+       N_estimates_upper = N_estimates_upper,
+       N_estimates_lower = N_estimates_lower) %>%
+  pivot_longer(-c(year, N_estimates_upper, N_estimates_lower),
+               names_to = "Pop_size") %>%
+  mutate(N_estimates_upper = ifelse(Pop_size == "N_estimates", N_estimates_upper, NA),
+         N_estimates_lower = ifelse(Pop_size == "N_estimates", N_estimates_lower, NA)) %>%
+  ggplot(aes(x = year, y = value, group = as.factor(Pop_size), colour = as.factor(Pop_size))) +
+  geom_line() +
+  geom_ribbon(aes(ymin = c(N_estimates_lower),
+                  ymax = c(N_estimates_upper)),
+              linetype=2, alpha=0.1) +
+  theme_minimal() +
+  coord_cartesian(ylim = c(0, 400))
 
 
 # ------

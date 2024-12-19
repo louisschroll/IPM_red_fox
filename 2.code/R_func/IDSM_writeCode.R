@@ -39,7 +39,7 @@ IDSM_writeCode <- function() {
       
       # Age classes 1 to 4 (indeces = 2, 3, 4, 5)
       for(a in 1:n_age_class){
-        Density[a, j, 1] ~ dbeta(beta_param[a, 1], beta_param[a, 2])
+        Density[a, j, 1] ~ dunif(0, 1) #dbeta(beta_param[a, 1], beta_param[a, 2])
       }
       
       ## Adult and juvenile numbers
@@ -96,7 +96,7 @@ IDSM_writeCode <- function() {
     # DS_count[j, t] = number of individuals detected in site j in year t
     for (j in 1:n_sites) {
       for (t in 1:n_years) {
-        DS_count[j, t] ~ dpois(p * sum(N_exp[1:n_age_class, j, t]))
+        DS_count[j, t] ~ dbin(p, sum(N_exp[1:n_age_class, j, t])) #dpois(p * sum(N_exp[1:n_age_class, j, t]))
       }
     }
     
@@ -112,7 +112,7 @@ IDSM_writeCode <- function() {
     # PARAMETER MODELS/CONSTRAINTS
     ## Distance sampling detection parameters
     # Detection decay
-    log(sigma) <- log.mean.sigma
+    log(sigma) <- 0.15 #log.mean.sigma
     sigma2 <- sigma * sigma
     
     # Effective strip width
@@ -131,8 +131,8 @@ IDSM_writeCode <- function() {
     ###########
     # PRIORS  #
     ###########
-    mean.recruitment  ~ dunif(0, 20) # Recruitment
-    mean.survival <- 0.56 # ~ dunif(0, 1)      # Survival
+    mean.recruitment <- 1.578 # dunif(0, 20) # Recruitment
+    mean.survival <- 0.54 # ~ dunif(0, 1)      # Survival
     log.mean.sigma ~ dunif(-10, 1) # Detection
     
     ##################################
@@ -147,7 +147,7 @@ IDSM_writeCode <- function() {
     # C = age-at-harvest matrix
     
     ## Priors
-    harvest_rate ~ dunif(0, 1)
+    harvest_rate <- 0.2 # ~ dunif(0, 1)
 
     ## Likelihood
 

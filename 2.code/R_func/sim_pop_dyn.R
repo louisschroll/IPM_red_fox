@@ -19,7 +19,7 @@ sim_pop_dyn <- function(n_years = 10,
   mean.sj <- 0.54 # 0.37
   mean.sa <- 0.54
   mean.f1 <- 0 #1.4
-  mean.fa <- 1.6
+  mean.fa <- 1.578
   surv_rate <- c(mean.sj, rep(mean.sa, n_age_class-1))
   fec_rate <- rep(mean.fa, n_age_class-1)
   
@@ -43,18 +43,18 @@ sim_pop_dyn <- function(n_years = 10,
     
     # Age classes 1 to 3 (indeces = 2, 3, 4): age classes 0, 1, and 2 survivors
     for (a in 1:(n_age_class - 2)) {
-      N[a + 1, t + 1] <- rbinom(1, N[a, t], surv_rate[a])
+      N[a + 1, t + 1] <- N[a, t] * surv_rate[a] #rbinom(1, N[a, t], surv_rate[a])
     }
     
     # Age class 4+ (index = n_age_class = 5): age class 4 and 5+ survivors
-    N[n_age_class, t + 1] <- rbinom(1, N[n_age_class - 1, t] + N[n_age_class, t], surv_rate[n_age_class])
+    N[n_age_class, t + 1] <- (N[n_age_class - 1, t] + N[n_age_class, t])*surv_rate[n_age_class] #rbinom(1, N[n_age_class - 1, t] + N[n_age_class, t], surv_rate[n_age_class])
     
     # Age class 0 (index = 1): local reproduction
-    N[1, t + 1] <- rpois(1, surv_rate[1] * sum(fec_rate * N[2:n_age_class, t + 1]))
+    N[1, t + 1] <- surv_rate[1] * sum(fec_rate * N[2:n_age_class, t + 1]) #rpois(1, surv_rate[1] * sum(fec_rate * N[2:n_age_class, t + 1]))
     
     if (sum(N[, t + 1]) == 0)
       break # Stop calculation if pop. extinct
     
   }
-  return(N)
+  return(round(N))
 }
