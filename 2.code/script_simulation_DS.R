@@ -16,7 +16,7 @@ rm(list = ls())          # remove all variables of the work space
 # Load packages
 library(tidyverse)
 library(jagsUI)
-
+library(popdemo)
 library(nimble)
 library(nimbleDistance)
 
