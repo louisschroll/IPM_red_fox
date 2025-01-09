@@ -14,7 +14,7 @@ sapply(paste0(path_to_Rfunc, "/", list.files(path_to_Rfunc)), source)
 
 ## Simulation of the data ------------------------------------------------------
 # Set simulation parameters
-n_years <- 10
+n_years <- 50
 n_age_class <- 5
 N0 <- 200
 
@@ -24,9 +24,11 @@ size_hunting_area <- 250
 dist_max <- 0.6
 mean.sigma <- 0.15
 # Simulate population dynamic
-N <- sim_pop_dyn(n_years = n_years,
+pop_dyn_list <- sim_pop_dyn(n_years = n_years,
                  n_age_class = n_age_class,
                  N0 = N0)
+
+N <- pop_dyn_list$N
 
 N %>%
   colSums() %>% 
@@ -60,6 +62,10 @@ DS_data <- sim_DS_data(Ntot = colSums(N),
 harvest_rate <- 0.2
 harvest_data <- sim_age_data(N, harvest_rate = harvest_rate)
 
+# Simulate reproduction data
+reprod_data <- sim_reprod_data(pop_dyn_list)
+
+
 # Analysis of DS data independently for each year -----------------------------
 N_estimate_DS <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
 
@@ -74,7 +80,7 @@ for (i in 1:n_years){
   N_estimates_lower <- c(N_estimates_lower, out1$q97.5$N_gic)
 }
 
-N_estimate_tibble <- tibble(year = 1:ncol(N),
+N_estimate_tibble <- tibble(year = 1:n_years,
        N_real = colSums(N),
        N_DS = N_estimate_DS,
        q97.5 = N_estimates_upper,
@@ -109,10 +115,26 @@ IPM.Code <- nimble::nimbleCode({
     # N[a, 1] ~ dcat(rep(1/500, 500))
   }
   
+  
+  # First year (reproduction not modeled separately)
+  B[1:n_age_class, 1] <- 0
+  L[1:n_age_class, 1] <- 0
+  R[1:n_age_class, 1] <- 0
+  
   # Population dynamic t>1
   for (t in 1:(n_years - 1)) {
     # Age class 0 (index = 1): local reproduction
-    N[1, t + 1] ~ dpois(surv_rate * sum(fec_rate * N[2:n_age_class, t]))
+    for (a in 1:n_age_class) {
+      # Breeding Population Size: Number of females that reproduce
+      B[a, t + 1] ~ dbin(pregnancy_rate, round(N[a, t] / 2))
+      
+      # Litter Size (in utero): Number of pups produced by females of age class a
+      L[a, t + 1] ~ dpois(B[a, t + 1] * rho * 0.5)
+      
+      # Number Recruits: Number of pups surviving to emerge from the den
+      R[a, t + 1] ~ dbin(surv_rate, L[a, t + 1])
+    }
+    N[1, t + 1] <- sum(R[1:n_age_class, t + 1])
     
     # Age classes 1 to 3 (indeces = 2, 3, 4): age classes 0, 1, and 2 survivors
     for (a in 1:(n_age_class - 2)) {
@@ -131,8 +153,9 @@ IPM.Code <- nimble::nimbleCode({
   ###########
   # PRIORS  #
   ###########
-  fec_rate <- 1.5 # dunif(0, 20) # Recruitment
   surv_rate ~ dunif(0, 1)      # Survival
+  pregnancy_rate ~ dunif(0, 1)
+  rho ~ dunif(0, 20)
   
   ################
   # COUNT MODULE #
@@ -173,6 +196,36 @@ IPM.Code <- nimble::nimbleCode({
       C[a, t] ~ dbin(harvest_rate, N[a, t])
     }
   }
+  
+  #########################
+  # PLACENTAL SCAR MODULE #
+  #########################
+  
+  ### Parameters:
+  # rho = expected number of placental scars (fetuses)
+  # pregnancy_rate = pregnancy rate
+  
+  ## Data:
+  # P1 = individual placental scar counts
+  # P1_age = individual ages associated with P1
+  # P1_year = year associated with P1
+  
+  # P2 = individual presence/absence of placental scars
+  # P2_age = individual ages associated with P2
+  # P2_year = year associated with P2
+  
+  
+  ### Likelihood (litter size)
+
+  for(x in 1:n_obs_litter){
+    obs_litter_size[x] ~ dpois(rho)
+  }
+
+  ### Likelihood (pregnancy rate)
+
+  for(x in 1:n_obs_female){
+    isBreeding[x] ~ dbern(pregnancy_rate)
+  }
 })
 
 
@@ -181,12 +234,16 @@ IPM.Code <- nimble::nimbleCode({
 input_data <- list(
   nim.data = list(
     DS_estimate = round(N_estimate_DS),
-    C = harvest_data
+    C = harvest_data,
+    obs_litter_size = reprod_data$nbFoetus,
+    isBreeding = reprod_data$isBreeding
   ),
   
   nim.constants = list(
     n_years = n_years,
-    n_age_class = nrow(harvest_data)
+    n_age_class = nrow(harvest_data),
+    n_obs_litter = length(reprod_data$nbFoetus),
+    n_obs_female = length(reprod_data$isBreeding)
   ))
 
 # IPM_simulateInits
@@ -194,17 +251,24 @@ initVals <- list(
   N = N,
   N_tot = colSums(N),
   N_dec = N[1:n_age_class, 1],
+  B = pop_dyn_list$B,
+  L = pop_dyn_list$L,
+  R = pop_dyn_list$NbRecruits,
   harvest_rate = 0.2,
   # kappa = 3,
-  succprob = 3 / (3 + round(N_estimate_DS)),
-  surv_rate = runif(1, min = 0, max = 1)
+  # succprob = 3 / (3 + round(N_estimate_DS)),
+  surv_rate = runif(1, min = 0, max = 1),
+  pregnancy_rate = runif(1, min = 0, max = 1),
+  rho = rpois(1, 4)
 )
 
 # IPM_setupModel
 ## Set parameters to monitor
 params <- c("N_tot", "N", 
             # "kappa", 
-            "surv_rate")
+            "surv_rate",
+            "pregnancy_rate",
+            "rho")
 
 niter = 40000
 nthin = 1
