@@ -14,7 +14,7 @@ sapply(paste0(path_to_Rfunc, "/", list.files(path_to_Rfunc)), source)
 
 ## Simulation of the data ------------------------------------------------------
 # Set simulation parameters
-n_years <- 50
+n_years <- 10
 n_age_class <- 5
 N0 <- 200
 
@@ -70,14 +70,14 @@ reprod_data <- sim_reprod_data(pop_dyn_list)
 N_estimate_DS <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
 
 for (i in 1:n_years){
-  out1 <- run_DS_model(DS_data %>% filter(year == i) %>% select(-year),
+  print(i/n_years)
+  DS_out <- run_DS_model(data_DS = DS_data %>% filter(year == i) %>% select(-year),
                        nsites = n_sites,
                        transect_len = transect_len,
-                       nz = 600)
-  N_estimate_DS <- c(N_estimate_DS, out1$mean$N_gic)
-  N_estimates2 <- c(N_estimates2, out1$mean$N_gic2)
-  N_estimates_upper <- c(N_estimates_upper, out1$q2.5$N_gic)
-  N_estimates_lower <- c(N_estimates_lower, out1$q97.5$N_gic)
+                       nz = 200)
+  N_estimate_DS <- c(N_estimate_DS, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% mean())
+  N_estimates_upper <- c(N_estimates_upper, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% quantile(probs = 0.025))
+  N_estimates_lower <- c(N_estimates_lower, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% quantile(probs = 0.975))
 }
 
 N_estimate_tibble <- tibble(year = 1:n_years,
