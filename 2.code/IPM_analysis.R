@@ -19,7 +19,7 @@ n_age_class <- 5
 N0 <- 200
 
 n_sites <- 50
-transect_len <- 2
+transect_len <- 6
 size_hunting_area <- 250
 dist_max <- 0.6
 mean.sigma <- 0.15
@@ -66,40 +66,38 @@ harvest_data <- sim_age_data(N, harvest_rate = harvest_rate)
 reprod_data <- sim_reprod_data(pop_dyn_list)
 
 
-# Analysis of DS data independently for each year -----------------------------
-N_estimate_DS <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
+# Analysis of DS data across all years -----------------------------
+DS_out <- DS_runModel(
+  data_DS = DS_data,
+  nsites = n_sites,
+  transect_len = transect_len,
+  nz = 1000
+)
 
-for (i in 1:n_years){
-  print(i/n_years)
-  DS_out <- run_DS_model(data_DS = DS_data %>% filter(year == i) %>% select(-year),
-                       nsites = n_sites,
-                       transect_len = transect_len,
-                       nz = 200)
-  N_estimate_DS <- c(N_estimate_DS, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% mean())
-  N_estimates_upper <- c(N_estimates_upper, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% quantile(probs = 0.025))
-  N_estimates_lower <- c(N_estimates_lower, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% quantile(probs = 0.975))
-}
+MCMCvis::MCMCtrace(DS_out)
 
-N_estimate_tibble <- tibble(year = 1:n_years,
-       N_real = colSums(N),
-       N_DS = N_estimate_DS,
-       q97.5 = N_estimates_upper,
-       q2.5 = N_estimates_lower) %>%
-  pivot_longer(-c(year, q2.5, q97.5),
-               names_to = "id", values_to = "mean") %>%
-  mutate(q97.5 = ifelse(id == "N_DS", q97.5, NA),
-         q2.5 = ifelse(id == "N_DS", q2.5, NA)) 
+N_estimate_tibble <- map(DS_out, as_tibble) %>% 
+  bind_rows() %>% 
+  select(starts_with("N_gic[")) %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(everything(), names_to = "year", values_to = "N") %>% 
+  mutate(year = as.numeric(str_remove(year, "n_gic_"))) %>% 
+  group_by(year) %>% 
+  summarise(mean = mean(N),
+            q2.5 = quantile(N, probs = 0.025),
+            q97.5 = quantile(N, probs = 0.975)) %>% 
+  bind_rows(tibble(year = 1:n_years,
+                   mean = colSums(N)), .id = "id")
 
-N_estimate_tibble %>%
+N_estimate_tibble %>% 
   ggplot(aes(x = year, y = mean, group = as.factor(id), colour = as.factor(id))) +
   geom_line() +
   geom_ribbon(aes(ymin = c(q2.5),
                   ymax = c(q97.5)),
               linetype=2, alpha=0.1) +
   theme_minimal() +
-  coord_cartesian(ylim = c(0, 400))
-
-
+  coord_cartesian(ylim = c(0, 500)) +
+  labs(x = "Year", y = "N")
 
 # --------------
 # Write IPM Code
@@ -233,7 +231,7 @@ IPM.Code <- nimble::nimbleCode({
 ## Reformat data into lists for Nimble
 input_data <- list(
   nim.data = list(
-    DS_estimate = round(N_estimate_DS),
+    DS_estimate = round(N_estimate_tibble$mean),
     C = harvest_data,
     obs_litter_size = reprod_data$nbFoetus,
     isBreeding = reprod_data$isBreeding
@@ -332,12 +330,12 @@ N_estimate_IPM %>%
   bind_rows(tibble(mean = c(colSums(N)),
                    year = 1:n_years,
                    id = "N_real")) %>% 
-  bind_rows(N_estimate_tibble %>% filter(id == "N_DS")) %>% 
+  bind_rows(N_estimate_tibble %>% filter(id == 1)) %>% 
   ggplot(aes(x = year, y = mean, group = as.factor(id), colour = as.factor(id))) +
   geom_line() +
   geom_ribbon(aes(ymin = c(q2.5), 
                   ymax = c(q97.5)), 
               linetype = 2, alpha = 0.1) +
   theme_minimal() +
-  coord_cartesian(ylim = c(0, 500))
+  coord_cartesian(ylim = c(0, 300))
 

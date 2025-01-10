@@ -1,36 +1,43 @@
-
-
 DS_runModel <- function(data_DS,
-                         dist_max = 0.6,
-                         transect_len = 2,
-                         size_study_area = 250,
-                         nsites = 50,
-                         nz = 200) {
+                        dist_max = 0.6,
+                        transect_len = 2,
+                        size_study_area = 250,
+                        nsites = 50,
+                        nz = 300) {
   B <- dist_max
   years <- unique(data_DS$year)
-  nyears <- length(years)
+  n_years <- length(years)
   
-  # Data augmentation: add "pseudo-individuals"
-  nind <- nrow(data_DS)
-  y <- c(data_DS$N_obs, rep(0, nz))
+  # Data augmentation: Create matrices for variables
+  nind_per_year <- sapply(years, function(yr) sum(data_DS$year == yr))
+  max_nind <- max(nind_per_year) + nz
   
-  # Augment 'site' and 'year' with random values for pseudo-individuals
-  site <- c(data_DS$site, sample(1:nsites, nz, replace = TRUE))
-  year <- c(data_DS$year, sample(years, nz, replace = TRUE))
+  y <- matrix(0, nrow = max_nind, ncol = n_years)
+  d <- matrix(B + 1, nrow = max_nind, ncol = n_years)  # B+1 for pseudo-individuals
+  site <- matrix(NA, nrow = max_nind, ncol = n_years)
   
-  # Replace NA in d with B + 1 for pseudo-individuals
-  d <- c(ifelse(is.na(data_DS$d), B + 1, data_DS$d), runif(nz, 0, B))
+  for (t in 1:n_years) {
+    observed <- data_DS$year == t
+    num_obs <- sum(observed)
+    
+    y[1:num_obs, t] <- data_DS$N_obs[observed]
+    d[1:num_obs, t] <- ifelse(is.na(data_DS$d[observed]), B + 1, data_DS$d[observed])
+    site[1:num_obs, t] <- data_DS$site[observed]
+    
+    # Fill pseudo-individuals
+    y[(num_obs + 1):max_nind, t] <- 0
+    d[(num_obs + 1):max_nind, t] <- runif(max_nind - num_obs, 0, B)
+    site[(num_obs + 1):max_nind, t] <- sample(1:nsites, max_nind - num_obs, replace = TRUE)
+  }
   
   # Bundle and summarize data set
   nimble.constants <- list(
-    nyears = nyears,
+    nyears = n_years,
     nsites = nsites,
     B = B,
     transect_len = transect_len,
     size_study_area = size_study_area,
-    nind = nind,
-    nz = nz, 
-    year = year
+    max_nind = max_nind
   )
   
   nimble.data <- list(y = y, d = d, site = site)
@@ -46,16 +53,16 @@ DS_runModel <- function(data_DS,
     
     for (t in 1:nyears) {
       # psi is a derived parameter under DA for stratified populations
-      psi[t] <- sum(lambda[1:nsites, t]) / (nind[t] + nz[t])
+      psi[t] <- sum(lambda[1:nsites, t]) / max_nind
       
       # 'Likelihood'
-      for (i in 1:(nind[t] + nz[t])) {
+      for (i in 1:max_nind) {
         # i is index for individuals
-        z[i, t] ~ dbern(psi[t])                               # Data augmentation variables
-        d[i, t] ~ dunif(0, B + 1)                          # Allow range up to B + 1
-        is_observed[i, t] <- (d[i, t] <= B)                  # Indicator for valid observations
+        z[i, t] ~ dbern(psi[t])                           # Data augmentation variables
+        d[i, t] ~ dunif(0, B + 1)                         # Allow range up to B + 1
+        is_observed[i, t] <- (d[i, t] <= B)               # Indicator for valid observations
         p[i, t] <- is_observed[i, t] * exp(-d[i, t] * d[i, t] / (2 * sigma * sigma))
-        y[i, t] ~ dbern(z[i, t] * p[i, t])                       # Basic Bernoulli random variable
+        y[i, t] ~ dbern(z[i, t] * p[i, t])                # Basic Bernoulli random variable
         site[i, t] ~ dcat(site.probs[1:nsites, t])
       }
       
@@ -79,15 +86,19 @@ DS_runModel <- function(data_DS,
   inits <- function() {
     alpha0 <- 0
     sigma <- exp(alpha0)
-    beta0 <- rep(0, nyears)
-    lambda <- matrix(exp(beta0), nrow = nsites, ncol = nyears)
+    beta0 <- rep(0, n_years)
+    lambda <- matrix(exp(beta0), nrow = nsites, ncol = n_years)
+    is_observed <- (d <= B) 
+    p <- is_observed * exp(-d * d / (2 * sigma * sigma))
     
     list(
       beta0 = beta0,
       alpha0 = alpha0,
       sigma = sigma,
       z = y,
-      N = matrix(5, nrow = nsites, ncol = nyears)
+      N = matrix(5, nrow = nsites, ncol = n_years),
+      p = p,
+      is_observed = is_observed
     )
   }
   
@@ -124,29 +135,35 @@ DS_runModel <- function(data_DS,
   return(mcmc_output)
 }
 
-# Analysis of DS data across all years -----------------------------
-DS_out <- run_DS_model(
-  data_DS = DS_data,
-  nsites = n_sites,
-  transect_len = transect_len,
-  nz = 200
-)
-
-MCMCvis::MCMCtrace(DS_out)
-
-N_estimate_DS <- map(DS_out, as_tibble) %>% bind_rows() %>% select(starts_with("N_gic["))
-# N_estimates_upper <- map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic_all) %>% quantile(probs = 0.025)
-# N_estimates_lower <- map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic_all) %>% quantile(probs = 0.975)
-
-N_estimate_tibble <- tibble(
-  N_DS = N_estimate_DS,
-  q97.5 = N_estimates_upper,
-  q2.5 = N_estimates_lower
-)
-
-N_estimate_tibble %>%
-  ggplot(aes(x = 1, y = N_DS)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = q2.5, ymax = q97.5), width = 0.1) +
-  theme_minimal() +
-  labs(x = "Year", y = "Estimated Population Size")
+# # Analysis of DS data across all years -----------------------------
+# DS_out2 <- DS_runModel(
+#   data_DS = DS_data,
+#   nsites = n_sites,
+#   transect_len = transect_len,
+#   nz = 200
+# )
+# 
+# MCMCvis::MCMCtrace(DS_out2)
+# 
+# N_estimate_tibble2 <- map(DS_out2, as_tibble) %>% 
+#   bind_rows() %>% 
+#   select(starts_with("N_gic[")) %>% 
+#   janitor::clean_names() %>% 
+#   pivot_longer(everything(), names_to = "year", values_to = "N") %>% 
+#   mutate(year = as.numeric(str_remove(year, "n_gic_"))) %>% 
+#   group_by(year) %>% 
+#   summarise(mean = mean(N),
+#             q2.5 = quantile(N, probs = 0.025),
+#             q97.5 = quantile(N, probs = 0.975)) %>% 
+#   bind_rows(tibble(year = 1:n_years,
+#                    mean = colSums(N)), .id = "id")
+# 
+# N_estimate_tibble2 %>% 
+#   ggplot(aes(x = year, y = mean, group = as.factor(id), colour = as.factor(id))) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = c(q2.5),
+#                   ymax = c(q97.5)),
+#               linetype=2, alpha=0.1) +
+#   theme_minimal() +
+#   coord_cartesian(ylim = c(0, 500)) +
+#   labs(x = "Year", y = "N")

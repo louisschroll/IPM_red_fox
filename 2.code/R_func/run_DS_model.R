@@ -131,3 +131,39 @@ run_DS_model <- function(data_DS,
 }
 
 
+
+# Analysis of DS data independently for each year -----------------------------
+# N_estimate_DS <- N_estimates_upper <- N_estimates_lower <- N_estimates2 <- c()
+# 
+# for (i in 1:n_years){
+#   print(i/n_years)
+#   DS_out <- run_DS_model(data_DS = DS_data %>% filter(year == i) %>% select(-year),
+#                          nsites = n_sites,
+#                          transect_len = transect_len,
+#                          nz = 200)
+#   N_estimate_DS <- c(N_estimate_DS, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% mean())
+#   N_estimates_upper <- c(N_estimates_upper, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% quantile(probs = 0.025))
+#   N_estimates_lower <- c(N_estimates_lower, map(DS_out, as_tibble) %>% bind_rows() %>% pull(N_gic) %>% quantile(probs = 0.975))
+# }
+# 
+# N_estimate_tibble <- tibble(year = 1:n_years,
+#                             N_real = colSums(N),
+#                             N_DS = N_estimate_DS,
+#                             q97.5 = N_estimates_upper,
+#                             q2.5 = N_estimates_lower) %>%
+#   pivot_longer(-c(year, q2.5, q97.5),
+#                names_to = "id", values_to = "mean") %>%
+#   mutate(q97.5 = ifelse(id == "N_DS", q97.5, NA),
+#          q2.5 = ifelse(id == "N_DS", q2.5, NA)) 
+# 
+# N_estimate_tibble %>%
+#   ggplot(aes(x = year, y = mean, group = as.factor(id), colour = as.factor(id))) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = c(q2.5),
+#                   ymax = c(q97.5)),
+#               linetype=2, alpha=0.1) +
+#   theme_minimal() +
+#   coord_cartesian(ylim = c(0, 500))
+# 
+
+
