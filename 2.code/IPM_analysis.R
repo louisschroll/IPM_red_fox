@@ -23,6 +23,10 @@ transect_len <- 6
 size_hunting_area <- 250
 dist_max <- 0.6
 mean.sigma <- 0.15
+
+surv_rate <- 0.56
+pregnancy_rate <- 0.4
+rho <- 4
 # Simulate population dynamic
 pop_dyn_list <- sim_pop_dyn(n_years = n_years,
                  n_age_class = n_age_class,
@@ -71,7 +75,7 @@ DS_out <- DS_runModel(
   data_DS = DS_data,
   nsites = n_sites,
   transect_len = transect_len,
-  nz = 1000
+  nz = 500 * transect_len
 )
 
 MCMCvis::MCMCtrace(DS_out)
@@ -100,199 +104,213 @@ N_estimate_tibble %>%
   labs(x = "Year", y = "N")
 
 # --------------
-# Write IPM Code
-IPM.Code <- nimble::nimbleCode({
-  ####################
-  # POPULATION MODEL #
-  ####################
-  
-  # Initial population size t = 1
-  for (a in 1:n_age_class){
-    N_dec[a] ~ dunif(1, 500)
-    N[a, 1] <- round(N_dec[a])
-    # N[a, 1] ~ dcat(rep(1/500, 500))
-  }
-  
-  
-  # First year (reproduction not modeled separately)
-  B[1:n_age_class, 1] <- 0
-  L[1:n_age_class, 1] <- 0
-  R[1:n_age_class, 1] <- 0
-  
-  # Population dynamic t>1
-  for (t in 1:(n_years - 1)) {
-    # Age class 0 (index = 1): local reproduction
-    for (a in 1:n_age_class) {
-      # Breeding Population Size: Number of females that reproduce
-      B[a, t + 1] ~ dbin(pregnancy_rate, round(N[a, t] / 2))
-      
-      # Litter Size (in utero): Number of pups produced by females of age class a
-      L[a, t + 1] ~ dpois(B[a, t + 1] * rho * 0.5)
-      
-      # Number Recruits: Number of pups surviving to emerge from the den
-      R[a, t + 1] ~ dbin(surv_rate, L[a, t + 1])
-    }
-    N[1, t + 1] <- sum(R[1:n_age_class, t + 1])
+IPM_writeCode <- function(){
+  # Write IPM Code
+  IPM.Code <- nimble::nimbleCode({
+    ####################
+    # POPULATION MODEL #
+    ####################
     
-    # Age classes 1 to 3 (indeces = 2, 3, 4): age classes 0, 1, and 2 survivors
-    for (a in 1:(n_age_class - 2)) {
-      N[a + 1, t + 1] ~ dbinom(surv_rate, N[a, t])
+    # Initial population size t = 1
+    for (a in 1:n_age_class){
+      N_dec[a] ~ dunif(1, 500)
+      N[a, 1] <- round(N_dec[a])
+      # N[a, 1] ~ dcat(rep(1/500, 500))
     }
     
-    # Age class 4+ (index = n_age_class = 5): age class 4 and 5+ survivors
-    N[n_age_class, t + 1] ~ dbinom(surv_rate, N[n_age_class - 1, t] + N[n_age_class, t])
-  }
-  
-  # Derived quantities
-  for (t in 1:n_years){
-    N_tot[t] <- sum(N[1:n_age_class, t])
-  }
-  
-  ###########
-  # PRIORS  #
-  ###########
-  surv_rate ~ dunif(0, 1)      # Survival
-  pregnancy_rate ~ dunif(0, 1)
-  rho ~ dunif(0, 20)
-  
-  ################
-  # COUNT MODULE #
-  ################
-  ## Parameters:
-  # N_tot = population size at a given time
-  # h = age- and time-dependent probability of dying from hunting
-  
-  ## Data:
-  # DS_estimate = estimation of population size using distance-sampling
-  
-  ## Likelihood
-  for (t in 1:n_years){
-    # succprob[t] <- kappa / (kappa + N_tot[t])
-    # DS_estimate[t] ~ dnegbin(prob = succprob[t], size = kappa)
-    DS_estimate[t] ~ dpois(N_tot[t])
-  }
-  
-  # Priors
-  # kappa ~ dunif(min = 0.01, max = 100)
-  
-  #########################
-  # AGE-AT-HARVEST MODULE #
-  #########################
-  ## Parameters:
-  # N = number of individuals in a given age class at a given time
-  # h = age- and time-dependent probability of dying from hunting
-  
-  ## Data:
-  # C = age-at-harvest matrix
-  
-  ## Priors
-  harvest_rate ~ dunif(0, 1)
-  
-  ## Likelihood
-  for(t in 1:n_years){
-    for(a in 1:n_age_class){
-      C[a, t] ~ dbin(harvest_rate, N[a, t])
+    
+    # First year (reproduction not modeled separately)
+    B[1:n_age_class, 1] <- 0
+    L[1:n_age_class, 1] <- 0
+    R[1:n_age_class, 1] <- 0
+    
+    # Population dynamic t>1
+    for (t in 1:(n_years - 1)) {
+      # Age class 0 (index = 1): local reproduction
+      for (a in 1:n_age_class) {
+        # Breeding Population Size: Number of females that reproduce
+        B[a, t + 1] ~ dbin(pregnancy_rate, round(N[a, t] / 2))
+        
+        # Litter Size (in utero): Number of pups produced by females of age class a
+        L[a, t + 1] ~ dpois(B[a, t + 1] * rho)
+        
+        # Number Recruits: Number of pups surviving to emerge from the den
+        R[a, t + 1] ~ dbin(surv_rate, L[a, t + 1])
+      }
+      N[1, t + 1] <- sum(R[1:n_age_class, t + 1])
+      
+      # Age classes 1 to 3 (indeces = 2, 3, 4): age classes 0, 1, and 2 survivors
+      for (a in 1:(n_age_class - 2)) {
+        N[a + 1, t + 1] ~ dbinom(surv_rate, N[a, t])
+      }
+      
+      # Age class 4+ (index = n_age_class = 5): age class 4 and 5+ survivors
+      N[n_age_class, t + 1] ~ dbinom(surv_rate, N[n_age_class - 1, t] + N[n_age_class, t])
     }
-  }
-  
-  #########################
-  # PLACENTAL SCAR MODULE #
-  #########################
-  
-  ### Parameters:
-  # rho = expected number of placental scars (fetuses)
-  # pregnancy_rate = pregnancy rate
-  
-  ## Data:
-  # P1 = individual placental scar counts
-  # P1_age = individual ages associated with P1
-  # P1_year = year associated with P1
-  
-  # P2 = individual presence/absence of placental scars
-  # P2_age = individual ages associated with P2
-  # P2_year = year associated with P2
-  
-  
-  ### Likelihood (litter size)
+    
+    # Derived quantities
+    for (t in 1:n_years){
+      N_tot[t] <- sum(N[1:n_age_class, t])
+    }
+    
+    ###########
+    # PRIORS  #
+    ###########
+    surv_rate ~ dunif(0, 1)      # Survival
+    pregnancy_rate ~ dunif(0, 1)
+    rho ~ dunif(0, 20)
+    
+    ################
+    # COUNT MODULE #
+    ################
+    ## Parameters:
+    # N_tot = population size at a given time
+    # h = age- and time-dependent probability of dying from hunting
+    
+    ## Data:
+    # DS_estimate = estimation of population size using distance-sampling
+    
+    ## Likelihood
+    for (t in 1:n_years){
+      # succprob[t] <- kappa / (kappa + N_tot[t])
+      # DS_estimate[t] ~ dnegbin(prob = succprob[t], size = kappa)
+      DS_estimate[t] ~ dpois(N_tot[t])
+    }
+    
+    # Priors
+    # kappa ~ dunif(min = 0.01, max = 100)
+    
+    #########################
+    # AGE-AT-HARVEST MODULE #
+    #########################
+    ## Parameters:
+    # N = number of individuals in a given age class at a given time
+    # h = age- and time-dependent probability of dying from hunting
+    
+    ## Data:
+    # C = age-at-harvest matrix
+    
+    ## Priors
+    harvest_rate ~ dunif(0, 1)
+    
+    ## Likelihood
+    for(t in 1:n_years){
+      for(a in 1:n_age_class){
+        C[a, t] ~ dbin(harvest_rate, N[a, t])
+      }
+    }
+    
+    #########################
+    # PLACENTAL SCAR MODULE #
+    #########################
+    
+    ### Parameters:
+    # rho = expected number of placental scars (fetuses)
+    # pregnancy_rate = pregnancy rate
+    
+    ## Data:
+    # P1 = individual placental scar counts
+    # P1_age = individual ages associated with P1
+    # P1_year = year associated with P1
+    
+    # P2 = individual presence/absence of placental scars
+    # P2_age = individual ages associated with P2
+    # P2_year = year associated with P2
+    
+    
+    ### Likelihood (litter size)
+    
+    for(x in 1:n_obs_litter){
+      obs_litter_size[x] ~ dpois(rho)
+    }
+    
+    ### Likelihood (pregnancy rate)
+    
+    for(x in 1:n_obs_female){
+      isBreeding[x] ~ dbern(pregnancy_rate)
+    }
+  })
+  return(IPM.Code)
+}
 
-  for(x in 1:n_obs_litter){
-    obs_litter_size[x] ~ dpois(rho)
-  }
-
-  ### Likelihood (pregnancy rate)
-
-  for(x in 1:n_obs_female){
-    isBreeding[x] ~ dbern(pregnancy_rate)
-  }
-})
+IPM.Code <- IPM_writeCode()
 
 
 # IPM_prepareInputData
-## Reformat data into lists for Nimble
-input_data <- list(
-  nim.data = list(
-    DS_estimate = round(N_estimate_tibble$mean),
-    C = harvest_data,
-    obs_litter_size = reprod_data$nbFoetus,
-    isBreeding = reprod_data$isBreeding
-  ),
-  
-  nim.constants = list(
-    n_years = n_years,
-    n_age_class = nrow(harvest_data),
-    n_obs_litter = length(reprod_data$nbFoetus),
-    n_obs_female = length(reprod_data$isBreeding)
-  ))
+IPM_prepareInputData <- function(){
+  ## Reformat data into lists for Nimble
+  list(
+    nim.data = list(
+      DS_estimate = round(N_estimate_tibble$mean),
+      C = harvest_data,
+      obs_litter_size = reprod_data$nbFoetus,
+      isBreeding = reprod_data$isBreeding
+    ),
+    
+    nim.constants = list(
+      n_years = n_years,
+      n_age_class = nrow(harvest_data),
+      n_obs_litter = length(reprod_data$nbFoetus),
+      n_obs_female = length(reprod_data$isBreeding)
+    ))
+}
+
+input_data <- IPM_prepareInputData()
 
 # IPM_simulateInits
-initVals <- list(
-  N = N,
-  N_tot = colSums(N),
-  N_dec = N[1:n_age_class, 1],
-  B = pop_dyn_list$B,
-  L = pop_dyn_list$L,
-  R = pop_dyn_list$NbRecruits,
-  harvest_rate = 0.2,
-  # kappa = 3,
-  # succprob = 3 / (3 + round(N_estimate_DS)),
-  surv_rate = runif(1, min = 0, max = 1),
-  pregnancy_rate = runif(1, min = 0, max = 1),
-  rho = rpois(1, 4)
-)
+IPM_simulateInits <- function(){
+  list(
+    N = N,
+    N_tot = colSums(N),
+    N_dec = N[1:n_age_class, 1],
+    B = pop_dyn_list$B,
+    L = pop_dyn_list$L,
+    R = pop_dyn_list$NbRecruits,
+    harvest_rate = 0.2,
+    # kappa = 3,
+    # succprob = 3 / (3 + round(N_estimate_DS)),
+    surv_rate = runif(1, min = 0, max = 1),
+    pregnancy_rate = runif(1, min = 0, max = 1),
+    rho = rpois(1, 4)
+  )
+}
+initVals <- IPM_simulateInits()
 
 # IPM_setupModel
-## Set parameters to monitor
-params <- c("N_tot", "N", 
-            # "kappa", 
-            "surv_rate",
-            "pregnancy_rate",
-            "rho")
-
-niter = 40000
-nthin = 1
-nburn = 5000
-nchains = 3
-
-model_setup <- list(
-  modelParams = params,
-  initVals = initVals,
-  mcmcParams = list(
-    niter = niter,
-    nthin = nthin,
-    nburn = nburn,
-    nchains = nchains
+IPM_setupModel <- function(){
+  ## Set parameters to monitor
+  params <- c("N_tot", "N", 
+              # "kappa", 
+              "surv_rate",
+              "pregnancy_rate",
+              "rho", "harvest_rate")
+  
+  niter = 10000
+  nthin = 1
+  nburn = 0.1 * niter
+  nchains = 3
+  
+  model_setup <- list(
+    modelParams = params,
+    initVals = initVals,
+    mcmcParams = list(
+      niter = niter,
+      nthin = nthin,
+      nburn = nburn,
+      nchains = nchains
+    )
   )
-)
+}
 
 
 
-model <- nimbleModel(IPM.Code, 
-                     constants = input_data$nim.constants, 
-                     data = input_data$nim.data,
-                     inits = initVals)
-model$initializeInfo()
-simulate(model)
-model$calculate("logProb_N")
+# model <- nimbleModel(IPM.Code, 
+#                      constants = input_data$nim.constants, 
+#                      data = input_data$nim.data,
+#                      inits = initVals)
+# model$initializeInfo()
+# simulate(model)
+# model$calculate("logProb_N")
 
 
 # IPM_runModel
@@ -337,5 +355,76 @@ N_estimate_IPM %>%
                   ymax = c(q97.5)), 
               linetype = 2, alpha = 0.1) +
   theme_minimal() +
-  coord_cartesian(ylim = c(0, 300))
+  coord_cartesian(ylim = c(0, 500))
+
+
+t(N) %>% as_tibble() %>% 
+  mutate(year = 1:nrow(.)) %>% 
+  rename_with(~ paste0("age_", seq_along(.)), starts_with("V")) %>% 
+  pivot_longer(-year,
+               names_to = "age_class") %>% 
+  ggplot(aes(x = year, y = value, group = as.factor(age_class), colour = as.factor(age_class))) +
+  geom_line() +
+  theme_minimal() +
+  coord_cartesian(ylim = c(0, 150))
+
+
+N_estimate_age_class <- IPM_tibble %>% 
+  select(starts_with("N[")) %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(everything()) %>% 
+  mutate(
+    year = as.integer(str_extract(name, "(?<=_)[0-9]+$")),
+    age_class = as.integer(str_extract(name, "(?<=_)[0-9]+(?=_[0-9]+$)"))
+  ) %>% 
+  group_by(year, age_class) %>% 
+  summarise(mean = mean(value),
+            median = median(value),
+            q2.5 = quantile(value, probs = 0.025),
+            q97.5 = quantile(value, probs = 0.975))
+  
+
+N_estimate_age_class %>% 
+  # bind_rows(tibble(mean = c(colSums(N)),
+  #                  year = 1:n_years,
+  #                  id = "N_real")) %>% 
+  # bind_rows(N_estimate_tibble %>% filter(id == 1)) %>% 
+  ggplot(aes(x = year, y = mean, group = as.factor(age_class), colour = as.factor(age_class))) +
+  geom_line() +
+  # geom_ribbon(aes(ymin = c(q2.5), 
+  #                 ymax = c(q97.5)), 
+  #             linetype = 2, alpha = 0.1) +
+  theme_minimal() +
+  coord_cartesian(ylim = c(0, 150))
+
+
+
+
+
+true_values <- tibble(
+  Parameter = c("surv_rate", "pregnancy_rate", "rho", "harvest_rate"),
+  True_Value = c(surv_rate, pregnancy_rate, rho, harvest_rate)
+)
+
+IPM_tibble %>% 
+  select(surv_rate, pregnancy_rate, rho, harvest_rate) %>% 
+  pivot_longer(cols = everything(), names_to = "Parameter", values_to = "Value") %>% 
+  ggplot(aes(x = Value, fill = Parameter)) +
+  geom_density(alpha = 0.2) +
+  geom_vline(
+    data = true_values,
+    aes(xintercept = True_Value),
+    color = "red",
+    linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  facet_wrap(~ Parameter, scales = "free", ncol = 1) +
+  theme_minimal() +
+  labs(
+    x = "Parameter Value",
+    y = "Density",
+    title = "Posterior Distributions of Parameters with True Values"
+  ) +
+  scale_fill_brewer(palette = "Set2") +
+  theme(legend.position = "none")
 
